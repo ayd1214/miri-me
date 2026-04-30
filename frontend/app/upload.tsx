@@ -1,4 +1,5 @@
 import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
 import { useState } from "react";
 import {
     Image,
@@ -60,13 +61,14 @@ export default function UploadScreen() {
 
       <TouchableOpacity
         style={[
-          styles.analyzeButton,
-          imageUri ? styles.activeAnalyzeButton : styles.disabledAnalyzeButton,
+            styles.analyzeButton,
+            imageUri ? styles.activeAnalyzeButton : styles.disabledAnalyzeButton,
         ]}
         disabled={!imageUri}
-      >
+        onPress={() => router.push("/review")}
+    >
         <Text style={styles.analyzeButtonText}>AI로 분석하기</Text>
-      </TouchableOpacity>
+    </TouchableOpacity>
     </View>
   );
 }
