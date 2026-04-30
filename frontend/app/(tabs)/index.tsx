@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 const dummyTasks = [
@@ -36,7 +37,7 @@ export default function HomeScreen() {
           <Text style={styles.subtitle}>캡처 한 장으로 끝내는 일정 관리</Text>
         </View>
 
-        <TouchableOpacity style={styles.addButton}>
+        <TouchableOpacity style={styles.addButton} onPress={() => router.push("/upload")}>
           <Text style={styles.addButtonText}>＋</Text>
         </TouchableOpacity>
       </View>
