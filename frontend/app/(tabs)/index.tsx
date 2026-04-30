@@ -1,17 +1,90 @@
-import { StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+const dummyTasks = [
+  {
+    id: 1,
+    title: "운영체제 과제 1",
+    dueDate: "5월 10일 23:59",
+    submitType: "LMS 제출",
+    keywords: ["필수 제출", "PDF", "지각 감점"],
+    status: "todo",
+  },
+  {
+    id: 2,
+    title: "NEXT 기획서 수정",
+    dueDate: "5월 12일 18:00",
+    submitType: "GitHub / 발표자료",
+    keywords: ["MVP", "기능 정리"],
+    status: "todo",
+  },
+  {
+    id: 3,
+    title: "컴퓨터네트워크 퀴즈 준비",
+    dueDate: "5월 15일 09:00",
+    submitType: "수업 전 확인",
+    keywords: ["TCP", "UDP", "HTTP"],
+    status: "done",
+  },
+];
 
 export default function HomeScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.logo}>미리me</Text>
-      <Text style={styles.subtitle}>캡처 한 장으로 끝내는 일정 관리</Text>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.logo}>미리me</Text>
+          <Text style={styles.subtitle}>캡처 한 장으로 끝내는 일정 관리</Text>
+        </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>오늘의 할 일</Text>
-        <Text style={styles.taskTitle}>운영체제 과제 1</Text>
-        <Text style={styles.taskInfo}>마감: 5월 10일 23:59</Text>
-        <Text style={styles.taskInfo}>제출: LMS 제출</Text>
+        <TouchableOpacity style={styles.addButton}>
+          <Text style={styles.addButtonText}>＋</Text>
+        </TouchableOpacity>
       </View>
+
+      <View style={styles.summaryCard}>
+        <Text style={styles.summaryTitle}>오늘 확인할 일</Text>
+        <Text style={styles.summaryNumber}>2개</Text>
+        <Text style={styles.summaryText}>마감이 가까운 과제를 먼저 확인해보세요.</Text>
+      </View>
+
+      <Text style={styles.sectionTitle}>다가오는 과제</Text>
+
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {dummyTasks.map((task) => (
+          <View key={task.id} style={styles.taskCard}>
+            <View style={styles.taskTopRow}>
+              <Text style={styles.taskTitle}>{task.title}</Text>
+
+              <View
+                style={[
+                  styles.statusBadge,
+                  task.status === "done" ? styles.doneBadge : styles.todoBadge,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.statusText,
+                    task.status === "done" ? styles.doneText : styles.todoText,
+                  ]}
+                >
+                  {task.status === "done" ? "완료" : "미완료"}
+                </Text>
+              </View>
+            </View>
+
+            <Text style={styles.taskInfo}>마감: {task.dueDate}</Text>
+            <Text style={styles.taskInfo}>제출: {task.submitType}</Text>
+
+            <View style={styles.keywordRow}>
+              {task.keywords.map((keyword) => (
+                <View key={keyword} style={styles.keywordBadge}>
+                  <Text style={styles.keywordText}>#{keyword}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ))}
+      </ScrollView>
     </View>
   );
 }
@@ -20,8 +93,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    paddingTop: 80,
+    paddingTop: 72,
     backgroundColor: "#F7F7F7",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   logo: {
     fontSize: 34,
@@ -29,29 +107,111 @@ const styles = StyleSheet.create({
     color: "#222",
   },
   subtitle: {
-    marginTop: 8,
-    fontSize: 16,
+    marginTop: 6,
+    fontSize: 15,
     color: "#666",
   },
-  card: {
-    marginTop: 32,
+  addButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#222",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addButtonText: {
+    fontSize: 28,
+    color: "#FFFFFF",
+    marginTop: -2,
+  },
+  summaryCard: {
+    marginTop: 28,
     padding: 20,
-    borderRadius: 18,
+    borderRadius: 22,
     backgroundColor: "#FFFFFF",
   },
-  cardLabel: {
-    fontSize: 18,
+  summaryTitle: {
+    fontSize: 16,
     fontWeight: "700",
-    marginBottom: 16,
+    color: "#444",
+  },
+  summaryNumber: {
+    marginTop: 8,
+    fontSize: 34,
+    fontWeight: "800",
+    color: "#222",
+  },
+  summaryText: {
+    marginTop: 6,
+    fontSize: 14,
+    color: "#777",
+  },
+  sectionTitle: {
+    marginTop: 28,
+    marginBottom: 14,
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#222",
+  },
+  taskCard: {
+    marginBottom: 14,
+    padding: 18,
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
+  },
+  taskTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
   },
   taskTitle: {
+    flex: 1,
     fontSize: 17,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#222",
   },
   taskInfo: {
-    marginTop: 6,
+    marginTop: 8,
     fontSize: 14,
+    color: "#555",
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  todoBadge: {
+    backgroundColor: "#FFF0D6",
+  },
+  doneBadge: {
+    backgroundColor: "#E7F6E7",
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  todoText: {
+    color: "#A76400",
+  },
+  doneText: {
+    color: "#2E7D32",
+  },
+  keywordRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 14,
+  },
+  keywordBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "#F0F0F0",
+  },
+  keywordText: {
+    fontSize: 12,
+    fontWeight: "600",
     color: "#555",
   },
 });
