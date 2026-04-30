@@ -1,0 +1,134 @@
+import { useState } from "react";
+import {
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
+
+export default function ReviewScreen() {
+  const [title, setTitle] = useState("운영체제 과제 1");
+  const [dueDate, setDueDate] = useState("2026-05-10 23:59");
+  const [submitType, setSubmitType] = useState("LMS 제출");
+  const [keywords, setKeywords] = useState("필수 제출, PDF, 지각 감점");
+  const [summary, setSummary] = useState(
+    "운영체제 과제 1을 PDF 형식으로 LMS에 제출해야 합니다."
+  );
+
+  return (
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <Text style={styles.title}>AI 분석 결과 확인</Text>
+      <Text style={styles.subtitle}>
+        AI가 추출한 내용을 확인하고, 틀린 부분이 있으면 직접 수정해주세요.
+      </Text>
+
+      <View style={styles.formCard}>
+        <Text style={styles.label}>과제명</Text>
+        <TextInput
+          style={styles.input}
+          value={title}
+          onChangeText={setTitle}
+          placeholder="과제명을 입력하세요"
+        />
+
+        <Text style={styles.label}>마감일</Text>
+        <TextInput
+          style={styles.input}
+          value={dueDate}
+          onChangeText={setDueDate}
+          placeholder="예: 2026-05-10 23:59"
+        />
+
+        <Text style={styles.label}>제출 방식</Text>
+        <TextInput
+          style={styles.input}
+          value={submitType}
+          onChangeText={setSubmitType}
+          placeholder="예: LMS 제출"
+        />
+
+        <Text style={styles.label}>중요 키워드</Text>
+        <TextInput
+          style={styles.input}
+          value={keywords}
+          onChangeText={setKeywords}
+          placeholder="예: 필수 제출, PDF, 지각 감점"
+        />
+
+        <Text style={styles.label}>요약</Text>
+        <TextInput
+          style={[styles.input, styles.summaryInput]}
+          value={summary}
+          onChangeText={setSummary}
+          placeholder="공지 내용을 간단히 요약하세요"
+          multiline
+          textAlignVertical="top"
+        />
+      </View>
+
+      <TouchableOpacity style={styles.saveButton}>
+        <Text style={styles.saveButtonText}>To-do로 저장하기</Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 24,
+    paddingTop: 72,
+    backgroundColor: "#F7F7F7",
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: "800",
+    color: "#222",
+  },
+  subtitle: {
+    marginTop: 8,
+    fontSize: 15,
+    lineHeight: 22,
+    color: "#666",
+  },
+  formCard: {
+    marginTop: 28,
+    padding: 20,
+    borderRadius: 24,
+    backgroundColor: "#FFFFFF",
+  },
+  label: {
+    marginTop: 18,
+    marginBottom: 8,
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#444",
+  },
+  input: {
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    borderRadius: 14,
+    backgroundColor: "#F3F3F3",
+    fontSize: 15,
+    color: "#222",
+  },
+  summaryInput: {
+    height: 110,
+    lineHeight: 21,
+  },
+  saveButton: {
+    marginTop: 24,
+    marginBottom: 40,
+    paddingVertical: 16,
+    borderRadius: 18,
+    backgroundColor: "#222",
+    alignItems: "center",
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+});
