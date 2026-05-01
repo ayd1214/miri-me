@@ -219,8 +219,10 @@ __marimo__/
 .DS_Store
 
 
-# backend/.gitignore
-.venv/
-serviceAccountKey.json
-.env
-__pycache__/
+
+
+# Backend
+backend/serviceAccountKey.json
+backend/.env
+backend/.venv/
+backend/__pycache__/
