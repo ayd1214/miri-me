@@ -182,7 +182,17 @@ export default function HomeScreen() {
       ) : (
         <ScrollView showsVerticalScrollIndicator={false}>
           {tasks.map((task) => (
-            <View key={task.id} style={styles.taskCard}>
+            <TouchableOpacity
+              key={task.id}
+              style={styles.taskCard}
+              activeOpacity={0.8}
+              onPress={() =>
+                router.push({
+                  pathname: "/task-detail",
+                  params: { id: task.id },
+                })
+              }
+            >
               <View style={styles.taskTopRow}>
                 <Text
                   style={[
@@ -199,7 +209,10 @@ export default function HomeScreen() {
                       styles.statusBadge,
                       task.status === "done" ? styles.doneBadge : styles.todoBadge,
                     ]}
-                    onPress={() => toggleTaskStatus(task.id)}
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      toggleTaskStatus(task.id);
+                    }}
                   >
                     <Text
                       style={[
@@ -213,7 +226,10 @@ export default function HomeScreen() {
 
                   <TouchableOpacity
                     style={styles.deleteButton}
-                    onPress={() => deleteTask(task.id)}
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      deleteTask(task.id);
+                    }}
                   >
                     <Text style={styles.deleteButtonText}>삭제</Text>
                   </TouchableOpacity>
@@ -241,7 +257,7 @@ export default function HomeScreen() {
                   </View>
                 ))}
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
         </ScrollView>
       )}
