@@ -106,6 +106,39 @@ export default function HomeScreen() {
     }
   };
 
+  const deleteTask = (taskId: string) => {
+    Alert.alert("과제 삭제", "이 과제를 삭제할까요?", [
+      {
+        text: "취소",
+        style: "cancel",
+      },
+      {
+        text: "삭제",
+        style: "destructive",
+        onPress: async () => {
+          const updatedTasks = tasks.filter((task) => task.id !== taskId);
+          setTasks(updatedTasks);
+
+          try {
+            const realTasks = updatedTasks.filter(
+              (task) => !task.id.startsWith("dummy-")
+            );
+
+            if (realTasks.length > 0) {
+              await AsyncStorage.setItem("tasks", JSON.stringify(realTasks));
+            } else {
+              await AsyncStorage.removeItem("tasks");
+            }
+          } catch (error) {
+            console.error(error);
+            Alert.alert("삭제 실패", "과제를 삭제하는 중 문제가 발생했습니다.");
+            loadTasks();
+          }
+        },
+      },
+    ]);
+  };
+
   const todoCount = tasks.filter((task) => task.status === "todo").length;
 
   return (
@@ -147,22 +180,31 @@ export default function HomeScreen() {
                 {task.title}
               </Text>
 
-              <TouchableOpacity
-                style={[
-                  styles.statusBadge,
-                  task.status === "done" ? styles.doneBadge : styles.todoBadge,
-                ]}
-                onPress={() => toggleTaskStatus(task.id)}
-              >
-                <Text
+              <View style={styles.actionRow}>
+                <TouchableOpacity
                   style={[
-                    styles.statusText,
-                    task.status === "done" ? styles.doneText : styles.todoText,
+                    styles.statusBadge,
+                    task.status === "done" ? styles.doneBadge : styles.todoBadge,
                   ]}
+                  onPress={() => toggleTaskStatus(task.id)}
                 >
-                  {task.status === "done" ? "완료" : "미완료"}
-                </Text>
-              </TouchableOpacity>
+                  <Text
+                    style={[
+                      styles.statusText,
+                      task.status === "done" ? styles.doneText : styles.todoText,
+                    ]}
+                  >
+                    {task.status === "done" ? "완료" : "미완료"}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => deleteTask(task.id)}
+                >
+                  <Text style={styles.deleteButtonText}>삭제</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             <Text style={styles.taskInfo}>마감: {task.dueDate}</Text>
@@ -282,6 +324,23 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 14,
     color: "#555",
+  },
+
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  deleteButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: "#F2F2F2",
+  },
+  deleteButtonText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#777",
   },
   statusBadge: {
     paddingHorizontal: 10,
