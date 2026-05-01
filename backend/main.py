@@ -22,7 +22,7 @@ app = FastAPI()
 class TaskCreate(BaseModel):
     title: str
     dueDate: str
-    submissionType: str
+    submitType: str        # submissionType → submitType
     keywords: List[str]
     summary: str
     priority: str
@@ -40,7 +40,7 @@ async def analyze(image: UploadFile = File(...)):
 
     # GPT-4o에 이미지 분석 요청
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-4o-mini",  # gpt-4o → gpt-4o-mini
         messages=[
             {
                 "role": "user",
@@ -51,7 +51,7 @@ async def analyze(image: UploadFile = File(...)):
 {
   "title": "과제명",
   "dueDate": "YYYY-MM-DDTHH:MM:SS",
-  "submissionType": "제출 방식",
+  "submitType": "제출 방식",
   "keywords": ["키워드1", "키워드2"],
   "summary": "한 줄 요약",
   "priority": "high 또는 medium 또는 low"
