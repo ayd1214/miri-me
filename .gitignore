@@ -217,3 +217,10 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 .DS_Store
+
+
+# backend/.gitignore
+.venv/
+serviceAccountKey.json
+.env
+__pycache__/
