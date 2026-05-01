@@ -8,6 +8,7 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function ReviewScreen() {
@@ -18,6 +19,7 @@ export default function ReviewScreen() {
   const [summary, setSummary] = useState(
     "운영체제 과제 1을 PDF 형식으로 LMS에 제출해야 합니다."
   );
+  const [priority, setPriority] = useState<"high" | "medium" | "low">("high");
 
   const saveTask = async () => {
     if (!title.trim()) {
@@ -35,6 +37,7 @@ export default function ReviewScreen() {
         .map((keyword) => keyword.trim())
         .filter((keyword) => keyword.length > 0),
       summary: summary.trim(),
+      priority,
       status: "todo",
     };
 
@@ -107,6 +110,60 @@ export default function ReviewScreen() {
         textAlignVertical="top"
       />
 
+      <Text style={styles.label}>우선순위</Text>
+      <View style={styles.priorityRow}>
+        <TouchableOpacity
+          style={[
+            styles.priorityButton,
+            priority === "high" && styles.selectedPriorityButton,
+          ]}
+          onPress={() => setPriority("high")}
+        >
+          <Text
+            style={[
+              styles.priorityButtonText,
+              priority === "high" && styles.selectedPriorityButtonText,
+            ]}
+          >
+            높음
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.priorityButton,
+            priority === "medium" && styles.selectedPriorityButton,
+          ]}
+          onPress={() => setPriority("medium")}
+        >
+          <Text
+            style={[
+              styles.priorityButtonText,
+              priority === "medium" && styles.selectedPriorityButtonText,
+            ]}
+          >
+            보통
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.priorityButton,
+            priority === "low" && styles.selectedPriorityButton,
+          ]}
+          onPress={() => setPriority("low")}
+        >
+          <Text
+            style={[
+              styles.priorityButtonText,
+              priority === "low" && styles.selectedPriorityButtonText,
+            ]}
+          >
+            낮음
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <TouchableOpacity style={styles.saveButton} onPress={saveTask}>
         <Text style={styles.saveButtonText}>To-do로 저장하기</Text>
       </TouchableOpacity>
@@ -151,6 +208,32 @@ const styles = StyleSheet.create({
   summaryInput: {
     height: 110,
     lineHeight: 21,
+  },
+  priorityRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 4,
+  },
+  priorityButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  selectedPriorityButton: {
+    backgroundColor: "#222",
+    borderColor: "#222",
+  },
+  priorityButtonText: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#555",
+  },
+  selectedPriorityButtonText: {
+    color: "#FFFFFF",
   },
   saveButton: {
     marginTop: 24,

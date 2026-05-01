@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,6 +17,7 @@ type Task = {
   submitType: string;
   keywords: string[];
   summary?: string;
+  priority?: "high" | "medium" | "low";
   status: "todo" | "done";
 };
 
@@ -75,6 +77,35 @@ export default function HomeScreen() {
     }, [])
   );
 
+  const toggleTaskStatus = async (taskId: string) => {
+    const updatedTasks: Task[] = tasks.map((task) =>
+      task.id === taskId
+        ? {
+            ...task,
+            status: task.status === "done" ? "todo" : "done",
+          }
+        : task
+    );
+
+    setTasks(updatedTasks);
+
+    try {
+      const realTasks = updatedTasks.filter(
+        (task) => !task.id.startsWith("dummy-")
+      );
+
+      if (realTasks.length > 0) {
+        await AsyncStorage.setItem("tasks", JSON.stringify(realTasks));
+      } else {
+        await AsyncStorage.removeItem("tasks");
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert("상태 변경 실패", "과제 상태를 저장하는 중 문제가 발생했습니다.");
+      loadTasks();
+    }
+  };
+
   const todoCount = tasks.filter((task) => task.status === "todo").length;
 
   return (
@@ -107,13 +138,21 @@ export default function HomeScreen() {
         {tasks.map((task) => (
           <View key={task.id} style={styles.taskCard}>
             <View style={styles.taskTopRow}>
-              <Text style={styles.taskTitle}>{task.title}</Text>
+              <Text
+                style={[
+                  styles.taskTitle,
+                  task.status === "done" && styles.doneTaskTitle,
+                ]}
+              >
+                {task.title}
+              </Text>
 
-              <View
+              <TouchableOpacity
                 style={[
                   styles.statusBadge,
                   task.status === "done" ? styles.doneBadge : styles.todoBadge,
                 ]}
+                onPress={() => toggleTaskStatus(task.id)}
               >
                 <Text
                   style={[
@@ -123,12 +162,22 @@ export default function HomeScreen() {
                 >
                   {task.status === "done" ? "완료" : "미완료"}
                 </Text>
-              </View>
+              </TouchableOpacity>
             </View>
 
             <Text style={styles.taskInfo}>마감: {task.dueDate}</Text>
             <Text style={styles.taskInfo}>제출: {task.submitType}</Text>
-
+            {task.priority && (
+              <Text style={styles.taskInfo}>
+                우선순위:{" "}
+                {task.priority === "high"
+                  ? "높음"
+                  : task.priority === "medium"
+                  ? "보통"
+                  : "낮음"}
+              </Text>
+            )}
+            
             <View style={styles.keywordRow}>
               {task.keywords.map((keyword) => (
                 <View key={keyword} style={styles.keywordBadge}>
@@ -224,6 +273,10 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "800",
     color: "#222",
+  },
+  doneTaskTitle: {
+    color: "#999",
+    textDecorationLine: "line-through",
   },
   taskInfo: {
     marginTop: 8,
