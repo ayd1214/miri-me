@@ -1,11 +1,13 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 import { useState } from "react";
 import {
+    Alert,
     ScrollView,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    View,
 } from "react-native";
 
 export default function ReviewScreen() {
@@ -17,6 +19,45 @@ export default function ReviewScreen() {
     "운영체제 과제 1을 PDF 형식으로 LMS에 제출해야 합니다."
   );
 
+  const saveTask = async () => {
+    if (!title.trim()) {
+      Alert.alert("과제명을 입력해주세요.");
+      return;
+    }
+
+    const newTask = {
+      id: Date.now().toString(),
+      title: title.trim(),
+      dueDate: dueDate.trim(),
+      submitType: submitType.trim(),
+      keywords: keywords
+        .split(",")
+        .map((keyword) => keyword.trim())
+        .filter((keyword) => keyword.length > 0),
+      summary: summary.trim(),
+      status: "todo",
+    };
+
+    try {
+      const existingTasks = await AsyncStorage.getItem("tasks");
+      const parsedTasks = existingTasks ? JSON.parse(existingTasks) : [];
+
+      const updatedTasks = [newTask, ...parsedTasks];
+
+      await AsyncStorage.setItem("tasks", JSON.stringify(updatedTasks));
+
+      Alert.alert("저장 완료", "To-do에 과제가 추가되었습니다.", [
+        {
+          text: "확인",
+          onPress: () => router.replace("/"),
+        },
+      ]);
+    } catch (error) {
+      console.error(error);
+      Alert.alert("저장 실패", "과제를 저장하는 중 문제가 발생했습니다.");
+    }
+  };
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <Text style={styles.title}>AI 분석 결과 확인</Text>
@@ -24,51 +65,49 @@ export default function ReviewScreen() {
         AI가 추출한 내용을 확인하고, 틀린 부분이 있으면 직접 수정해주세요.
       </Text>
 
-      <View style={styles.formCard}>
-        <Text style={styles.label}>과제명</Text>
-        <TextInput
-          style={styles.input}
-          value={title}
-          onChangeText={setTitle}
-          placeholder="과제명을 입력하세요"
-        />
+      <Text style={styles.label}>과제명</Text>
+      <TextInput
+        style={styles.input}
+        value={title}
+        onChangeText={setTitle}
+        placeholder="과제명을 입력하세요"
+      />
 
-        <Text style={styles.label}>마감일</Text>
-        <TextInput
-          style={styles.input}
-          value={dueDate}
-          onChangeText={setDueDate}
-          placeholder="예: 2026-05-10 23:59"
-        />
+      <Text style={styles.label}>마감일</Text>
+      <TextInput
+        style={styles.input}
+        value={dueDate}
+        onChangeText={setDueDate}
+        placeholder="예: 2026-05-10 23:59"
+      />
 
-        <Text style={styles.label}>제출 방식</Text>
-        <TextInput
-          style={styles.input}
-          value={submitType}
-          onChangeText={setSubmitType}
-          placeholder="예: LMS 제출"
-        />
+      <Text style={styles.label}>제출 방식</Text>
+      <TextInput
+        style={styles.input}
+        value={submitType}
+        onChangeText={setSubmitType}
+        placeholder="예: LMS 제출"
+      />
 
-        <Text style={styles.label}>중요 키워드</Text>
-        <TextInput
-          style={styles.input}
-          value={keywords}
-          onChangeText={setKeywords}
-          placeholder="예: 필수 제출, PDF, 지각 감점"
-        />
+      <Text style={styles.label}>중요 키워드</Text>
+      <TextInput
+        style={styles.input}
+        value={keywords}
+        onChangeText={setKeywords}
+        placeholder="예: 필수 제출, PDF, 지각 감점"
+      />
 
-        <Text style={styles.label}>요약</Text>
-        <TextInput
-          style={[styles.input, styles.summaryInput]}
-          value={summary}
-          onChangeText={setSummary}
-          placeholder="공지 내용을 간단히 요약하세요"
-          multiline
-          textAlignVertical="top"
-        />
-      </View>
+      <Text style={styles.label}>요약</Text>
+      <TextInput
+        style={[styles.input, styles.summaryInput]}
+        value={summary}
+        onChangeText={setSummary}
+        placeholder="공지 내용을 간단히 요약하세요"
+        multiline
+        textAlignVertical="top"
+      />
 
-      <TouchableOpacity style={styles.saveButton}>
+      <TouchableOpacity style={styles.saveButton} onPress={saveTask}>
         <Text style={styles.saveButtonText}>To-do로 저장하기</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -89,15 +128,10 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginTop: 8,
+    marginBottom: 16,
     fontSize: 15,
     lineHeight: 22,
     color: "#666",
-  },
-  formCard: {
-    marginTop: 28,
-    padding: 20,
-    borderRadius: 24,
-    backgroundColor: "#FFFFFF",
   },
   label: {
     marginTop: 18,
@@ -110,7 +144,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 13,
     borderRadius: 14,
-    backgroundColor: "#F3F3F3",
+    backgroundColor: "#FFFFFF",
     fontSize: 15,
     color: "#222",
   },

@@ -1,9 +1,27 @@
-import { router } from "expo-router";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-const dummyTasks = [
+type Task = {
+  id: string;
+  title: string;
+  dueDate: string;
+  submitType: string;
+  keywords: string[];
+  summary?: string;
+  status: "todo" | "done";
+};
+
+const dummyTasks: Task[] = [
   {
-    id: 1,
+    id: "dummy-1",
     title: "운영체제 과제 1",
     dueDate: "5월 10일 23:59",
     submitType: "LMS 제출",
@@ -11,7 +29,7 @@ const dummyTasks = [
     status: "todo",
   },
   {
-    id: 2,
+    id: "dummy-2",
     title: "NEXT 기획서 수정",
     dueDate: "5월 12일 18:00",
     submitType: "GitHub / 발표자료",
@@ -19,7 +37,7 @@ const dummyTasks = [
     status: "todo",
   },
   {
-    id: 3,
+    id: "dummy-3",
     title: "컴퓨터네트워크 퀴즈 준비",
     dueDate: "5월 15일 09:00",
     submitType: "수업 전 확인",
@@ -29,6 +47,36 @@ const dummyTasks = [
 ];
 
 export default function HomeScreen() {
+  const [tasks, setTasks] = useState<Task[]>(dummyTasks);
+
+  const loadTasks = async () => {
+    try {
+      const savedTasks = await AsyncStorage.getItem("tasks");
+
+      if (savedTasks) {
+        const parsedTasks: Task[] = JSON.parse(savedTasks);
+
+        if (parsedTasks.length > 0) {
+          setTasks(parsedTasks);
+          return;
+        }
+      }
+
+      setTasks(dummyTasks);
+    } catch (error) {
+      console.error(error);
+      setTasks(dummyTasks);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadTasks();
+    }, [])
+  );
+
+  const todoCount = tasks.filter((task) => task.status === "todo").length;
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -37,21 +85,26 @@ export default function HomeScreen() {
           <Text style={styles.subtitle}>캡처 한 장으로 끝내는 일정 관리</Text>
         </View>
 
-        <TouchableOpacity style={styles.addButton} onPress={() => router.push("/upload")}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => router.push("/upload")}
+        >
           <Text style={styles.addButtonText}>＋</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.summaryCard}>
         <Text style={styles.summaryTitle}>오늘 확인할 일</Text>
-        <Text style={styles.summaryNumber}>2개</Text>
-        <Text style={styles.summaryText}>마감이 가까운 과제를 먼저 확인해보세요.</Text>
+        <Text style={styles.summaryNumber}>{todoCount}개</Text>
+        <Text style={styles.summaryText}>
+          마감이 가까운 과제를 먼저 확인해보세요.
+        </Text>
       </View>
 
       <Text style={styles.sectionTitle}>다가오는 과제</Text>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        {dummyTasks.map((task) => (
+        {tasks.map((task) => (
           <View key={task.id} style={styles.taskCard}>
             <View style={styles.taskTopRow}>
               <Text style={styles.taskTitle}>{task.title}</Text>
