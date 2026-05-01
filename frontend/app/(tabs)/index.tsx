@@ -49,7 +49,7 @@ const dummyTasks: Task[] = [
 ];
 
 export default function HomeScreen() {
-  const [tasks, setTasks] = useState<Task[]>(dummyTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
 
   const loadTasks = async () => {
     try {
@@ -57,17 +57,14 @@ export default function HomeScreen() {
 
       if (savedTasks) {
         const parsedTasks: Task[] = JSON.parse(savedTasks);
-
-        if (parsedTasks.length > 0) {
-          setTasks(parsedTasks);
-          return;
-        }
+        setTasks(parsedTasks);
+        return;
       }
 
-      setTasks(dummyTasks);
+      setTasks([]);
     } catch (error) {
       console.error(error);
-      setTasks(dummyTasks);
+      setTasks([]);
     }
   };
 
@@ -167,69 +164,87 @@ export default function HomeScreen() {
 
       <Text style={styles.sectionTitle}>다가오는 과제</Text>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {tasks.map((task) => (
-          <View key={task.id} style={styles.taskCard}>
-            <View style={styles.taskTopRow}>
-              <Text
-                style={[
-                  styles.taskTitle,
-                  task.status === "done" && styles.doneTaskTitle,
-                ]}
-              >
-                {task.title}
-              </Text>
+      {tasks.length === 0 ? (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyIcon}>📌</Text>
+          <Text style={styles.emptyTitle}>아직 등록된 과제가 없습니다</Text>
+          <Text style={styles.emptyText}>
+            오른쪽 위 + 버튼을 눌러 공지 캡처를 추가해보세요.
+          </Text>
 
-              <View style={styles.actionRow}>
-                <TouchableOpacity
+          <TouchableOpacity
+            style={styles.emptyButton}
+            onPress={() => router.push("/upload")}
+          >
+            <Text style={styles.emptyButtonText}>첫 과제 등록하기</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {tasks.map((task) => (
+            <View key={task.id} style={styles.taskCard}>
+              <View style={styles.taskTopRow}>
+                <Text
                   style={[
-                    styles.statusBadge,
-                    task.status === "done" ? styles.doneBadge : styles.todoBadge,
+                    styles.taskTitle,
+                    task.status === "done" && styles.doneTaskTitle,
                   ]}
-                  onPress={() => toggleTaskStatus(task.id)}
                 >
-                  <Text
-                    style={[
-                      styles.statusText,
-                      task.status === "done" ? styles.doneText : styles.todoText,
-                    ]}
-                  >
-                    {task.status === "done" ? "완료" : "미완료"}
-                  </Text>
-                </TouchableOpacity>
+                  {task.title}
+                </Text>
 
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => deleteTask(task.id)}
-                >
-                  <Text style={styles.deleteButtonText}>삭제</Text>
-                </TouchableOpacity>
+                <View style={styles.actionRow}>
+                  <TouchableOpacity
+                    style={[
+                      styles.statusBadge,
+                      task.status === "done" ? styles.doneBadge : styles.todoBadge,
+                    ]}
+                    onPress={() => toggleTaskStatus(task.id)}
+                  >
+                    <Text
+                      style={[
+                        styles.statusText,
+                        task.status === "done" ? styles.doneText : styles.todoText,
+                      ]}
+                    >
+                      {task.status === "done" ? "완료" : "미완료"}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => deleteTask(task.id)}
+                  >
+                    <Text style={styles.deleteButtonText}>삭제</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <Text style={styles.taskInfo}>마감: {task.dueDate}</Text>
+              <Text style={styles.taskInfo}>제출: {task.submitType}</Text>
+
+              {task.priority && (
+                <Text style={styles.taskInfo}>
+                  우선순위:{" "}
+                  {task.priority === "high"
+                    ? "높음"
+                    : task.priority === "medium"
+                    ? "보통"
+                    : "낮음"}
+                </Text>
+              )}
+
+              <View style={styles.keywordRow}>
+                {task.keywords.map((keyword) => (
+                  <View key={keyword} style={styles.keywordBadge}>
+                    <Text style={styles.keywordText}>#{keyword}</Text>
+                  </View>
+                ))}
               </View>
             </View>
-
-            <Text style={styles.taskInfo}>마감: {task.dueDate}</Text>
-            <Text style={styles.taskInfo}>제출: {task.submitType}</Text>
-            {task.priority && (
-              <Text style={styles.taskInfo}>
-                우선순위:{" "}
-                {task.priority === "high"
-                  ? "높음"
-                  : task.priority === "medium"
-                  ? "보통"
-                  : "낮음"}
-              </Text>
-            )}
-            
-            <View style={styles.keywordRow}>
-              {task.keywords.map((keyword) => (
-                <View key={keyword} style={styles.keywordBadge}>
-                  <Text style={styles.keywordText}>#{keyword}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        ))}
-      </ScrollView>
+          ))}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -298,6 +313,44 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#222",
   },
+
+
+  emptyCard: {
+    marginTop: 12,
+    padding: 28,
+    borderRadius: 24,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+  },
+  emptyIcon: {
+    fontSize: 42,
+    marginBottom: 14,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#222",
+  },
+  emptyText: {
+    marginTop: 8,
+    fontSize: 14,
+    lineHeight: 21,
+    color: "#777",
+    textAlign: "center",
+  },
+  emptyButton: {
+    marginTop: 22,
+    paddingVertical: 13,
+    paddingHorizontal: 22,
+    borderRadius: 999,
+    backgroundColor: "#222",
+  },
+  emptyButtonText: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+
   taskCard: {
     marginBottom: 14,
     padding: 18,
