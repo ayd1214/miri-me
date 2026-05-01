@@ -8,6 +8,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import os
 import base64
+import json
 
 load_dotenv()
 
@@ -22,7 +23,7 @@ app = FastAPI()
 class TaskCreate(BaseModel):
     title: str
     dueDate: str
-    submitType: str        # submissionType → submitType
+    submitType: str
     keywords: List[str]
     summary: str
     priority: str
@@ -34,13 +35,11 @@ def root():
 
 @app.post("/api/analyze")
 async def analyze(image: UploadFile = File(...)):
-    # 이미지를 base64로 변환
     image_bytes = await image.read()
     base64_image = base64.b64encode(image_bytes).decode("utf-8")
 
-    # GPT-4o에 이미지 분석 요청
     response = client.chat.completions.create(
-        model="gpt-4o-mini",  # gpt-4o → gpt-4o-mini
+        model="gpt-4o-mini",
         messages=[
             {
                 "role": "user",
@@ -69,7 +68,6 @@ async def analyze(image: UploadFile = File(...)):
         max_tokens=500
     )
 
-    import json
     result = json.loads(response.choices[0].message.content)
     return result
 
