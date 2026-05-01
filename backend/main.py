@@ -16,7 +16,7 @@ app = FastAPI()
 class TaskCreate(BaseModel):
     title: str
     dueDate: str
-    submissionType: str
+    submitType: str
     keywords: List[str]
     summary: str
     priority: str  # "high" | "medium" | "low"
