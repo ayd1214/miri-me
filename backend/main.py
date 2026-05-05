@@ -13,7 +13,17 @@ import json
 
 load_dotenv()
 
-cred = credentials.Certificate("serviceAccountKey.json")
+cred_path = "serviceAccountKey.json"
+if os.path.exists(cred_path):
+    cred = credentials.Certificate(cred_path)
+else:
+    # Use environment variable for Railway deployment
+    firebase_env = os.getenv("FIREBASE_SERVICE_ACCOUNT_KEY")
+    if not firebase_env:
+        raise ValueError("Firebase credentials not found. Set FIREBASE_SERVICE_ACCOUNT_KEY env var.")
+    cred_json = json.loads(firebase_env)
+    cred = credentials.Certificate(cred_json)
+
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
