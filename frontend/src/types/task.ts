@@ -23,3 +23,12 @@ export type CreateTaskInput = {
   priority?: TaskPriority;
   status?: TaskStatus;
 };
+
+export type AnalyzeTaskResult = {
+  title: string;
+  dueDate: string;
+  submitType: string;
+  keywords: string[];
+  summary?: string;
+  priority?: TaskPriority;
+};

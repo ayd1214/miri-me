@@ -1,23 +1,30 @@
+import { analyzeImage } from "@/src/api/taskApi";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function UploadScreen() {
-  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] =
+    useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const imageUri = selectedImage?.uri ?? null;
 
   const pickImage = async () => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permissionResult.granted) {
-      alert("이미지를 선택하려면 사진 접근 권한이 필요합니다.");
+      Alert.alert("권한 필요", "이미지를 선택하려면 사진 접근 권한이 필요합니다.");
       return;
     }
 
@@ -28,7 +35,37 @@ export default function UploadScreen() {
     });
 
     if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
+      setSelectedImage(result.assets[0]);
+    }
+  };
+
+  const analyzeSelectedImage = async () => {
+    if (!selectedImage) {
+      return;
+    }
+
+    try {
+      setIsAnalyzing(true);
+      const analysisResult = await analyzeImage({
+        uri: selectedImage.uri,
+        fileName: selectedImage.fileName,
+        mimeType: selectedImage.mimeType,
+      });
+
+      router.push({
+        pathname: "/review",
+        params: {
+          analysisResult: JSON.stringify(analysisResult),
+        },
+      });
+    } catch (error) {
+      console.error(error);
+      Alert.alert(
+        "분석 실패",
+        "이미지를 분석하는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요."
+      );
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -61,14 +98,20 @@ export default function UploadScreen() {
 
       <TouchableOpacity
         style={[
-            styles.analyzeButton,
-            imageUri ? styles.activeAnalyzeButton : styles.disabledAnalyzeButton,
+          styles.analyzeButton,
+          imageUri && !isAnalyzing
+            ? styles.activeAnalyzeButton
+            : styles.disabledAnalyzeButton,
         ]}
-        disabled={!imageUri}
-        onPress={() => router.push("/review")}
-    >
-        <Text style={styles.analyzeButtonText}>AI로 분석하기</Text>
-    </TouchableOpacity>
+        disabled={!imageUri || isAnalyzing}
+        onPress={analyzeSelectedImage}
+      >
+        {isAnalyzing ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.analyzeButtonText}>AI로 분석하기</Text>
+        )}
+      </TouchableOpacity>
     </View>
   );
 }

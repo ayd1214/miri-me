@@ -1,4 +1,5 @@
 import { deleteTask as deleteTaskApi, getTasks, updateTaskStatus } from "@/src/api/taskApi";
+import { useAuth } from "@/src/context/AuthContext";
 import { Task } from "@/src/types/task";
 
 import { router, useFocusEffect } from "expo-router";
@@ -12,34 +13,8 @@ import {
   View,
 } from "react-native";
 
-const dummyTasks: Task[] = [
-  {
-    id: "dummy-1",
-    title: "운영체제 과제 1",
-    dueDate: "5월 10일 23:59",
-    submitType: "LMS 제출",
-    keywords: ["필수 제출", "PDF", "지각 감점"],
-    status: "todo",
-  },
-  {
-    id: "dummy-2",
-    title: "NEXT 기획서 수정",
-    dueDate: "5월 12일 18:00",
-    submitType: "GitHub / 발표자료",
-    keywords: ["MVP", "기능 정리"],
-    status: "todo",
-  },
-  {
-    id: "dummy-3",
-    title: "컴퓨터네트워크 퀴즈 준비",
-    dueDate: "5월 15일 09:00",
-    submitType: "수업 전 확인",
-    keywords: ["TCP", "UDP", "HTTP"],
-    status: "done",
-  },
-];
-
 export default function HomeScreen() {
+  const { logout, user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
 
   const loadTasks = async () => {
@@ -119,14 +94,21 @@ export default function HomeScreen() {
         <View>
           <Text style={styles.logo}>미리me</Text>
           <Text style={styles.subtitle}>캡처 한 장으로 끝내는 일정 관리</Text>
+          <Text style={styles.userText}>{user?.email}</Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => router.push("/upload")}
-        >
-          <Text style={styles.addButtonText}>＋</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+            <Text style={styles.logoutButtonText}>로그아웃</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => router.push("/upload")}
+          >
+            <Text style={styles.addButtonText}>＋</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.summaryCard}>
@@ -261,6 +243,28 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 15,
     color: "#666",
+  },
+  userText: {
+    marginTop: 5,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#888",
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  logoutButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
+  },
+  logoutButtonText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#555",
   },
   addButton: {
     width: 48,

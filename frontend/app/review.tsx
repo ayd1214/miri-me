@@ -1,7 +1,11 @@
 import { createTask } from "@/src/api/taskApi";
-import { CreateTaskInput } from "@/src/types/task";
-import { router } from "expo-router";
-import { useState } from "react";
+import {
+  AnalyzeTaskResult,
+  CreateTaskInput,
+  TaskPriority,
+} from "@/src/types/task";
+import { router, useLocalSearchParams } from "expo-router";
+import { useMemo, useState } from "react";
 import {
   Alert,
   ScrollView,
@@ -12,15 +16,65 @@ import {
   View,
 } from "react-native";
 
+const defaultReviewValues: AnalyzeTaskResult = {
+  title: "운영체제 과제 1",
+  dueDate: "2026-05-10 23:59",
+  submitType: "LMS 제출",
+  keywords: ["필수 제출", "PDF", "지각 감점"],
+  summary: "운영체제 과제 1을 PDF 형식으로 LMS에 제출해야 합니다.",
+  priority: "high",
+};
+
+const parseAnalysisResult = (
+  rawResult: string | string[] | undefined
+): AnalyzeTaskResult | null => {
+  const value = Array.isArray(rawResult) ? rawResult[0] : rawResult;
+
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(value) as Partial<AnalyzeTaskResult>;
+
+    return {
+      title: parsed.title || defaultReviewValues.title,
+      dueDate: parsed.dueDate || defaultReviewValues.dueDate,
+      submitType: parsed.submitType || defaultReviewValues.submitType,
+      keywords: Array.isArray(parsed.keywords)
+        ? parsed.keywords
+        : defaultReviewValues.keywords,
+      summary: parsed.summary || defaultReviewValues.summary,
+      priority:
+        parsed.priority === "high" ||
+        parsed.priority === "medium" ||
+        parsed.priority === "low"
+          ? parsed.priority
+          : defaultReviewValues.priority,
+    };
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
 export default function ReviewScreen() {
-  const [title, setTitle] = useState("운영체제 과제 1");
-  const [dueDate, setDueDate] = useState("2026-05-10 23:59");
-  const [submitType, setSubmitType] = useState("LMS 제출");
-  const [keywords, setKeywords] = useState("필수 제출, PDF, 지각 감점");
-  const [summary, setSummary] = useState(
-    "운영체제 과제 1을 PDF 형식으로 LMS에 제출해야 합니다."
+  const { analysisResult } = useLocalSearchParams<{
+    analysisResult?: string;
+  }>();
+  const initialValues = useMemo(
+    () => parseAnalysisResult(analysisResult) || defaultReviewValues,
+    [analysisResult]
   );
-  const [priority, setPriority] = useState<"high" | "medium" | "low">("high");
+
+  const [title, setTitle] = useState(initialValues.title);
+  const [dueDate, setDueDate] = useState(initialValues.dueDate);
+  const [submitType, setSubmitType] = useState(initialValues.submitType);
+  const [keywords, setKeywords] = useState(initialValues.keywords.join(", "));
+  const [summary, setSummary] = useState(initialValues.summary || "");
+  const [priority, setPriority] = useState<TaskPriority>(
+    initialValues.priority || "high"
+  );
 
   const saveTask = async () => {
     if (!title.trim()) {
