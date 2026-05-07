@@ -227,4 +227,5 @@ __marimo__/
 backend/serviceAccountKey.json
 backend/.env
 backend/.venv/
+backend/venv/
 backend/__pycache__/
