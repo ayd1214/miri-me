@@ -17,7 +17,11 @@ export default function HomeScreen() {
   const { logout, user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
+    if (!user) {
+      return;
+    }
+
     try {
       const backendTasks = await getTasks();
       setTasks(backendTasks);
@@ -26,12 +30,12 @@ export default function HomeScreen() {
       Alert.alert("불러오기 실패", "과제 목록을 불러오는 중 문제가 발생했습니다.");
       setTasks([]);
     }
-  };
+  }, [user]);
 
   useFocusEffect(
     useCallback(() => {
       loadTasks();
-    }, [])
+    }, [loadTasks])
   );
 
   const toggleTaskStatus = async (taskId: string) => {
