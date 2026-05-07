@@ -61,8 +61,15 @@ async def analyze(image: UploadFile = File(...)):
     base64_image = base64.b64encode(image_bytes).decode("utf-8")
 
     try:
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        now = datetime.now()
+        current_time = now.strftime("%Y-%m-%d %H:%M:%S")
+        
+        # AI가 날짜 계산을 틀리지 않도록 오늘부터 7일간의 요일-날짜 매핑표를 제공합니다.
+        from datetime import timedelta
+        upcoming_dates = ", ".join([f"{(now + timedelta(days=i)).strftime('%A')}({(now + timedelta(days=i)).strftime('%Y-%m-%d')})" for i in range(8)])
+        
         prompt_text = f"""이 이미지는 학교 과제 공지입니다. 오늘 날짜와 시간은 {current_time} 입니다. 
+만약 요일(예: Monday)만 적혀있다면 다음의 다가오는 요일-날짜 표를 참고하여 정확한 날짜를 적으세요: [{upcoming_dates}].
 아래 규칙을 엄격히 지켜서 JSON 형식으로만 응답해주세요.
 
 [규칙]
