@@ -1,14 +1,15 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createTask } from "@/src/api/taskApi";
+import { CreateTaskInput } from "@/src/types/task";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function ReviewScreen() {
@@ -27,8 +28,7 @@ export default function ReviewScreen() {
       return;
     }
 
-    const newTask = {
-      id: Date.now().toString(),
+    const newTask: CreateTaskInput = {
       title: title.trim(),
       dueDate: dueDate.trim(),
       submitType: submitType.trim(),
@@ -42,12 +42,7 @@ export default function ReviewScreen() {
     };
 
     try {
-      const existingTasks = await AsyncStorage.getItem("tasks");
-      const parsedTasks = existingTasks ? JSON.parse(existingTasks) : [];
-
-      const updatedTasks = [newTask, ...parsedTasks];
-
-      await AsyncStorage.setItem("tasks", JSON.stringify(updatedTasks));
+      await createTask(newTask);
 
       Alert.alert("저장 완료", "To-do에 과제가 추가되었습니다.", [
         {

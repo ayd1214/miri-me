@@ -1,24 +1,14 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getTask } from "@/src/api/taskApi";
+import { Task } from "@/src/types/task";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-
-type Task = {
-  id: string;
-  title: string;
-  dueDate: string;
-  submitType: string;
-  keywords: string[];
-  summary?: string;
-  priority?: "high" | "medium" | "low";
-  status: "todo" | "done";
-};
 
 export default function TaskDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -26,21 +16,21 @@ export default function TaskDetailScreen() {
 
   useEffect(() => {
     const loadTask = async () => {
-      try {
-        const savedTasks = await AsyncStorage.getItem("tasks");
-        const parsedTasks: Task[] = savedTasks ? JSON.parse(savedTasks) : [];
-        const foundTask = parsedTasks.find((item) => item.id === id);
+      if (!id) return;
 
-        if (foundTask) {
-          setTask(foundTask);
-        }
+      try {
+        const backendTask = await getTask(id);
+        setTask(backendTask);
       } catch (error) {
         console.error(error);
+        setTask(null);
       }
     };
 
     loadTask();
   }, [id]);
+
+    
 
   const getPriorityText = (priority?: "high" | "medium" | "low") => {
     if (priority === "high") return "높음";
