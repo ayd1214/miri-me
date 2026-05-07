@@ -1,9 +1,8 @@
+import { API_BASE_URL } from "../constants/api";
 import { CreateTaskInput, Task, TaskStatus } from "../types/task";
 
-const BASE_URL = "http://172.30.1.83:8000";
-
 const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
-  const response = await fetch(`${BASE_URL}${path}`, {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",
       ...(options?.headers || {}),
@@ -45,7 +44,7 @@ export const updateTaskStatus = async (
 };
 
 export const deleteTask = async (taskId: string): Promise<void> => {
-  const response = await fetch(`${BASE_URL}/tasks/${taskId}`, {
+  const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
     method: "DELETE",
   });
 
