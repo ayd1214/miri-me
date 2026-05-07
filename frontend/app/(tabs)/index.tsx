@@ -1,4 +1,6 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { deleteTask as deleteTaskApi, getTasks, updateTaskStatus } from "@/src/api/taskApi";
+import { Task } from "@/src/types/task";
+
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -9,17 +11,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-type Task = {
-  id: string;
-  title: string;
-  dueDate: string;
-  submitType: string;
-  keywords: string[];
-  summary?: string;
-  priority?: "high" | "medium" | "low";
-  status: "todo" | "done";
-};
 
 const dummyTasks: Task[] = [
   {
@@ -53,17 +44,11 @@ export default function HomeScreen() {
 
   const loadTasks = async () => {
     try {
-      const savedTasks = await AsyncStorage.getItem("tasks");
-
-      if (savedTasks) {
-        const parsedTasks: Task[] = JSON.parse(savedTasks);
-        setTasks(parsedTasks);
-        return;
-      }
-
-      setTasks([]);
+      const backendTasks = await getTasks();
+      setTasks(backendTasks);
     } catch (error) {
       console.error(error);
+      Alert.alert("불러오기 실패", "과제 목록을 불러오는 중 문제가 발생했습니다.");
       setTasks([]);
     }
   };
@@ -75,11 +60,17 @@ export default function HomeScreen() {
   );
 
   const toggleTaskStatus = async (taskId: string) => {
+    const targetTask = tasks.find((task) => task.id === taskId);
+
+    if (!targetTask) return;
+
+    const nextStatus = targetTask.status === "done" ? "todo" : "done";
+
     const updatedTasks: Task[] = tasks.map((task) =>
       task.id === taskId
         ? {
             ...task,
-            status: task.status === "done" ? "todo" : "done",
+            status: nextStatus,
           }
         : task
     );
@@ -87,15 +78,7 @@ export default function HomeScreen() {
     setTasks(updatedTasks);
 
     try {
-      const realTasks = updatedTasks.filter(
-        (task) => !task.id.startsWith("dummy-")
-      );
-
-      if (realTasks.length > 0) {
-        await AsyncStorage.setItem("tasks", JSON.stringify(realTasks));
-      } else {
-        await AsyncStorage.removeItem("tasks");
-      }
+      await updateTaskStatus(taskId, nextStatus);
     } catch (error) {
       console.error(error);
       Alert.alert("상태 변경 실패", "과제 상태를 저장하는 중 문제가 발생했습니다.");
@@ -117,15 +100,7 @@ export default function HomeScreen() {
           setTasks(updatedTasks);
 
           try {
-            const realTasks = updatedTasks.filter(
-              (task) => !task.id.startsWith("dummy-")
-            );
-
-            if (realTasks.length > 0) {
-              await AsyncStorage.setItem("tasks", JSON.stringify(realTasks));
-            } else {
-              await AsyncStorage.removeItem("tasks");
-            }
+            await deleteTaskApi(taskId);
           } catch (error) {
             console.error(error);
             Alert.alert("삭제 실패", "과제를 삭제하는 중 문제가 발생했습니다.");
