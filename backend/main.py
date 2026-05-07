@@ -60,15 +60,17 @@ async def analyze(image: UploadFile = File(...)):
     image_bytes = await image.read()
     base64_image = base64.b64encode(image_bytes).decode("utf-8")
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": """이 이미지는 학교 과제 공지입니다. 다음 JSON 형식으로만 응답해주세요:
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            response_format={ "type": "json_object" },
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": """이 이미지는 학교 과제 공지입니다. 다음 JSON 형식으로만 응답해주세요:
 {
   "title": "과제명",
   "dueDate": "YYYY-MM-DDTHH:MM:SS",
@@ -77,21 +79,33 @@ async def analyze(image: UploadFile = File(...)):
   "summary": "한 줄 요약",
   "priority": "high 또는 medium 또는 low"
 }"""
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{base64_image}"
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            }
                         }
-                    }
-                ]
-            }
-        ],
-        max_tokens=500
-    )
+                    ]
+                }
+            ],
+            max_tokens=500
+        )
 
-    result = json.loads(response.choices[0].message.content)
-    return result
+        raw_content = response.choices[0].message.content
+        
+        # 혹시 모를 마크다운 백틱(```json ... ```) 제거 로직
+        if raw_content.startswith("```json"):
+            raw_content = raw_content.replace("```json", "", 1)
+        if raw_content.endswith("```"):
+            raw_content = raw_content.rsplit("```", 1)[0]
+            
+        result = json.loads(raw_content.strip())
+        return result
+        
+    except Exception as e:
+        print(f"Error in analyze: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/tasks")
 async def get_tasks():
