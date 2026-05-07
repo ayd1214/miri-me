@@ -28,16 +28,13 @@ const getErrorMessage = (error: unknown) => {
       return "비밀번호는 6자 이상이어야 합니다.";
     }
 
-    if (error.message.includes("native OAuth setup")) {
-      return "앱에서 구글 로그인을 쓰려면 Firebase OAuth 설정과 네이티브 리다이렉트 설정이 추가로 필요합니다.";
-    }
   }
 
   return "인증 처리 중 문제가 발생했습니다.";
 };
 
 export default function LoginScreen() {
-  const { login, loginWithGoogle, signup } = useAuth();
+  const { login, signup } = useAuth();
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -61,18 +58,6 @@ export default function LoginScreen() {
       }
     } catch (error) {
       Alert.alert(mode === "login" ? "로그인 실패" : "회원가입 실패", getErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const submitGoogle = async () => {
-    setLoading(true);
-
-    try {
-      await loginWithGoogle();
-    } catch (error) {
-      Alert.alert("구글 로그인 실패", getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -151,14 +136,6 @@ export default function LoginScreen() {
               {mode === "login" ? "로그인하기" : "회원가입하기"}
             </Text>
           )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          disabled={loading}
-          onPress={submitGoogle}
-          style={styles.googleButton}
-        >
-          <Text style={styles.googleButtonText}>Google로 계속하기</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -244,20 +221,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "800",
     color: "#FFFFFF",
-  },
-  googleButton: {
-    marginTop: 12,
-    minHeight: 50,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#DDDDDD",
-    backgroundColor: "#FFFFFF",
-  },
-  googleButtonText: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: "#333",
   },
 });

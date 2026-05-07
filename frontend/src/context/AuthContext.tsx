@@ -1,6 +1,5 @@
 import {
   signInWithEmail,
-  signInWithGoogle,
   signOutUser,
   signUpWithEmail,
   subscribeToAuthChanges,
@@ -20,7 +19,6 @@ type AuthContextValue = {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -46,9 +44,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
       },
       signup: async (email, password) => {
         await signUpWithEmail(email, password);
-      },
-      loginWithGoogle: async () => {
-        await signInWithGoogle();
       },
       logout: signOutUser,
     }),
