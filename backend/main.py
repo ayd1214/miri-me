@@ -1,9 +1,10 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import List, Optional
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, auth
 from datetime import datetime
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -39,6 +40,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+security = HTTPBearer()
+
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    try:
+        decoded_token = auth.verify_id_token(token)
+        return decoded_token['uid']
+    except Exception as e:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
 class TaskCreate(BaseModel):
     title: str
     dueDate: str
@@ -56,7 +71,7 @@ def root():
     return {"message": "miri-me backend running"}
 
 @app.post("/analyze")
-async def analyze(image: UploadFile = File(...)):
+async def analyze(image: UploadFile = File(...), user_id: str = Depends(get_current_user)):
     image_bytes = await image.read()
     base64_image = base64.b64encode(image_bytes).decode("utf-8")
 
@@ -129,8 +144,8 @@ async def analyze(image: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/tasks")
-async def get_tasks():
-    tasks_ref = db.collection("tasks")
+async def get_tasks(user_id: str = Depends(get_current_user)):
+    tasks_ref = db.collection("users").document(user_id).collection("tasks")
     docs = tasks_ref.stream()
     tasks = []
     for doc in docs:
@@ -140,16 +155,16 @@ async def get_tasks():
     return tasks
 
 @app.post("/tasks")
-async def create_task(task: TaskCreate):
-    doc_ref = db.collection("tasks").document()
+async def create_task(task: TaskCreate, user_id: str = Depends(get_current_user)):
+    doc_ref = db.collection("users").document(user_id).collection("tasks").document()
     task_data = task.dict()
     task_data["createdAt"] = datetime.utcnow().isoformat()
     doc_ref.set(task_data)
     return {"id": doc_ref.id, **task_data}
 
 @app.get("/tasks/{task_id}")
-async def get_task(task_id: str):
-    doc_ref = db.collection("tasks").document(task_id)
+async def get_task(task_id: str, user_id: str = Depends(get_current_user)):
+    doc_ref = db.collection("users").document(user_id).collection("tasks").document(task_id)
     doc = doc_ref.get()
     if not doc.exists:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -158,8 +173,8 @@ async def get_task(task_id: str):
     return task_data
 
 @app.patch("/tasks/{task_id}/status")
-async def update_task_status(task_id: str, status_update: TaskStatusUpdate):
-    doc_ref = db.collection("tasks").document(task_id)
+async def update_task_status(task_id: str, status_update: TaskStatusUpdate, user_id: str = Depends(get_current_user)):
+    doc_ref = db.collection("users").document(user_id).collection("tasks").document(task_id)
     doc = doc_ref.get()
     if not doc.exists:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -168,8 +183,8 @@ async def update_task_status(task_id: str, status_update: TaskStatusUpdate):
     return {"id": task_id, "status": status_update.status}
 
 @app.delete("/tasks/{task_id}")
-async def delete_task(task_id: str):
-    doc_ref = db.collection("tasks").document(task_id)
+async def delete_task(task_id: str, user_id: str = Depends(get_current_user)):
+    doc_ref = db.collection("users").document(user_id).collection("tasks").document(task_id)
     doc = doc_ref.get()
     if not doc.exists:
         raise HTTPException(status_code=404, detail="Task not found")
