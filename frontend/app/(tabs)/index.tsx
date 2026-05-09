@@ -168,22 +168,17 @@ export default function HomeScreen() {
                 <View style={styles.actionRow}>
                   <TouchableOpacity
                     style={[
-                      styles.statusBadge,
-                      task.status === "done" ? styles.doneBadge : styles.todoBadge,
+                      styles.checkButton,
+                      task.status === "done" && styles.checkedButton,
                     ]}
                     onPress={(event) => {
                       event.stopPropagation();
                       toggleTaskStatus(task.id);
                     }}
                   >
-                    <Text
-                      style={[
-                        styles.statusText,
-                        task.status === "done" ? styles.doneText : styles.todoText,
-                      ]}
-                    >
-                      {task.status === "done" ? "완료" : "미완료"}
-                    </Text>
+                    {task.status === "done" && (
+                      <Text style={styles.checkButtonText}>✓</Text>
+                    )}
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -397,26 +392,25 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#777",
   },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
+  checkButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: "#D8D8D8",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
   },
-  todoBadge: {
-    backgroundColor: "#FFF0D6",
+  checkedButton: {
+    borderColor: "#222222",
+    backgroundColor: "#222222",
   },
-  doneBadge: {
-    backgroundColor: "#E7F6E7",
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  todoText: {
-    color: "#A76400",
-  },
-  doneText: {
-    color: "#2E7D32",
+  checkButtonText: {
+    marginTop: -1,
+    fontSize: 17,
+    fontWeight: "900",
+    color: "#FFFFFF",
   },
   keywordRow: {
     flexDirection: "row",
