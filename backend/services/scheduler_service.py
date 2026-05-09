@@ -8,70 +8,71 @@ scheduler = AsyncIOScheduler()
 
 async def check_due_tasks():
     """
-    1분마다 실행되며 마감이 임박한 과제를 찾아 알림을 보냅니다.
+    전체 유저의 과제를 효율적으로 훑으며 설정된 시간에 맞춰 알림을 보냅니다. (Collection Group 사용)
     """
-    print(f"[{datetime.now()}] Checking deadlines...")
-    
-    # 1. 모든 유저 가져오기
-    users_ref = db.collection("users")
-    users = users_ref.stream()
+    print(f"[{datetime.now()}] Checking deadlines for all users...")
     
     now = datetime.now()
-    # 1시간 이내 마감인 것들을 체크
-    alert_threshold = now + timedelta(hours=1)
     
-    for user_doc in users:
-        user_id = user_doc.id
-        user_data = user_doc.to_dict()
-        push_token = user_data.get("pushToken")
+    # 1. 모든 유저의 'todo' 상태 과제를 한 번의 쿼리로 가져옵니다.
+    # (주의: Firestore 콘솔에서 collectionGroup 'tasks'에 대한 인덱스 생성이 필요할 수 있습니다.)
+    tasks = db.collection_group("tasks").where("status", "==", "todo").stream()
+    
+    # 동일 유저에 대한 토큰 조회를 최적화하기 위한 캐시
+    user_tokens = {}
+
+    for task_doc in tasks:
+        task = task_doc.to_dict()
+        task_id = task_doc.id
         
-        if not push_token:
+        # 부모 문서 경로에서 user_id 추출 (users/{user_id}/tasks/{task_id})
+        user_id = task_doc.reference.parent.parent.id
+        
+        due_date_str = task.get('dueDate')
+        if not due_date_str:
             continue
             
-        # 2. 해당 유저의 과제 중 'todo' 상태인 것 조회
-        tasks_ref = db.collection("users").document(user_id).collection("tasks")
-        tasks = tasks_ref.where("status", "==", "todo").stream()
-        
-        for task_doc in tasks:
-            task = task_doc.to_dict()
-            task_id = task_doc.id
+        try:
+            # 시간 차이 계산 (분 단위)
+            due_date = datetime.fromisoformat(due_date_str.replace('Z', ''))
+            time_diff_min = int((due_date - now).total_seconds() / 60)
             
-            # 이미 알림을 보낸 과제는 스킵
-            if task.get("notified"):
-                continue
-                
-            try:
-                # ISO 포맷 파싱 (예: 2026-05-11T23:59:00)
-                due_date_str = task.get('dueDate')
-                if not due_date_str:
-                    continue
-                
-                due_date_str = due_date_str.replace('Z', '')
-                due_date = datetime.fromisoformat(due_date_str)
-                
-                # 마감까지 1시간 이내라면 알림 발송
-                if now <= due_date <= alert_threshold:
-                    title = "과제 마감 임박! ⏰"
-                    body = f"'{task['title']}' 마감이 1시간 남았습니다. 서두르세요!"
+            # 유저가 설정한 알림 오프셋 (기본값: 1시간 전, 1일 전)
+            settings = task.get("notificationSettings", [60, 1440])
+            notified = task.get("notifiedOffsets", [])
+            
+            for offset in settings:
+                # 조건: 남은 시간이 설정된 오프셋 이내이고, 아직 해당 시점 알림을 보낸 적이 없을 때
+                if 0 <= time_diff_min <= offset and offset not in notified:
+                    # 유저 토큰 조회
+                    if user_id not in user_tokens:
+                        user_doc = db.collection("users").document(user_id).get()
+                        user_tokens[user_id] = user_doc.to_dict().get("pushToken") if user_doc.exists else None
                     
-                    # 비동기로 알림 발송
-                    await send_push_notification(
-                        push_token, 
-                        title, 
-                        body, 
-                        {"taskId": task_id, "type": "DEADLINE_APPROACHING"}
-                    )
-                    
-                    # 중복 알림 방지를 위해 상태 업데이트
-                    tasks_ref.document(task_id).update({"notified": True})
-                    print(f"Notification sent to {user_id} for task: {task['title']}")
-                    
-            except Exception as e:
-                print(f"Error parsing date for task {task_id}: {e}")
+                    push_token = user_tokens[user_id]
+                    if push_token:
+                        # 사람이 읽기 쉬운 시간 표현으로 변환
+                        time_str = f"{offset//1440}일 전" if offset >= 1440 else f"{offset//60}시간 전"
+                        if offset < 60: time_str = f"{offset}분 전"
+                        
+                        await send_push_notification(
+                            push_token,
+                            f"마감 임박 알림 ({time_str})",
+                            f"'{task['title']}' 마감이 얼마 남지 않았습니다!",
+                            {"taskId": task_id, "offset": offset}
+                        )
+                        
+                        # 보낸 알림 기록 추가 및 DB 업데이트
+                        notified.append(offset)
+                        task_doc.reference.update({"notifiedOffsets": notified})
+                        print(f"[{time_str}] Notification sent to {user_id} for task: {task['title']}")
+                        
+        except Exception as e:
+            print(f"Error processing task {task_id}: {e}")
 
 def start_scheduler():
     # 1분마다 체크 수행
     scheduler.add_job(check_due_tasks, 'interval', minutes=1)
     if not scheduler.running:
         scheduler.start()
-        print("Background Scheduler started successfully.")
+        print("Optimized Background Scheduler started.")
