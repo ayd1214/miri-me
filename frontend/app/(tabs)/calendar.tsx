@@ -13,6 +13,7 @@ import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  PanResponder,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,13 +21,30 @@ import {
   View,
 } from "react-native";
 
+type CalendarMode = "month" | "week";
+
 type CalendarDay = {
   date: Date;
   key: string;
   isCurrentMonth: boolean;
 };
 
-const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
+const weekDayLabels = ["일", "월", "화", "수", "목", "금", "토"];
+
+const addDays = (date: Date, days: number) => {
+  const nextDate = new Date(date);
+  nextDate.setDate(date.getDate() + days);
+  return nextDate;
+};
+
+const getStartOfWeek = (date: Date) => {
+  return addDays(date, -date.getDay());
+};
+
+const getDateFromKey = (dateKey: string) => {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(year, month - 1, day);
+};
 
 const buildCalendarDays = (monthDate: Date): CalendarDay[] => {
   const year = monthDate.getFullYear();
@@ -35,13 +53,24 @@ const buildCalendarDays = (monthDate: Date): CalendarDay[] => {
   const startDate = new Date(year, month, 1 - firstDay.getDay());
 
   return Array.from({ length: 42 }, (_, index) => {
-    const date = new Date(startDate);
-    date.setDate(startDate.getDate() + index);
+    const date = addDays(startDate, index);
 
     return {
       date,
       key: getDateKey(date),
       isCurrentMonth: date.getMonth() === month,
+    };
+  });
+};
+
+const buildWeekDays = (weekStart: Date): CalendarDay[] => {
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = addDays(weekStart, index);
+
+    return {
+      date,
+      key: getDateKey(date),
+      isCurrentMonth: true,
     };
   });
 };
@@ -52,14 +81,32 @@ const getPriorityColor = (priority?: Task["priority"]) => {
   return "#777777";
 };
 
+const getWeekRangeTitle = (weekStart: Date) => {
+  const weekEnd = addDays(weekStart, 6);
+  const startLabel = `${weekStart.getMonth() + 1}.${weekStart.getDate()}`;
+  const endLabel = `${weekEnd.getMonth() + 1}.${weekEnd.getDate()}`;
+
+  return `${startLabel} - ${endLabel}`;
+};
+
+const getDateSectionTitle = (date: Date) => {
+  return `${date.getMonth() + 1}월 ${date.getDate()}일 ${
+    weekDayLabels[date.getDay()]
+  }요일`;
+};
+
 export default function CalendarScreen() {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [viewMode, setViewMode] = useState<CalendarMode>("month");
   const [selectedDateKey, setSelectedDateKey] = useState(getDateKey(new Date()));
   const [visibleMonth, setVisibleMonth] = useState(() => {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);
   });
+  const [visibleWeekStart, setVisibleWeekStart] = useState(() =>
+    getStartOfWeek(new Date())
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   const loadTasks = useCallback(async () => {
@@ -103,11 +150,24 @@ export default function CalendarScreen() {
     return buildCalendarDays(visibleMonth);
   }, [visibleMonth]);
 
+  const weekDays = useMemo(() => {
+    return buildWeekDays(visibleWeekStart);
+  }, [visibleWeekStart]);
+
   const selectedTasks = useMemo(() => {
     return [...(tasksByDate[selectedDateKey] || [])].sort((a, b) =>
       a.dueDate.localeCompare(b.dueDate)
     );
   }, [selectedDateKey, tasksByDate]);
+
+  const weekTaskCount = weekDays.reduce((count, day) => {
+    return count + (tasksByDate[day.key]?.length || 0);
+  }, 0);
+
+  const monthTaskCount = tasks.filter((task) => {
+    const dateKey = getDueDateKey(task.dueDate);
+    return dateKey?.startsWith(getMonthKey(visibleMonth));
+  }).length;
 
   const moveMonth = (offset: number) => {
     setVisibleMonth((currentMonth) => {
@@ -124,6 +184,51 @@ export default function CalendarScreen() {
       return nextMonth;
     });
   };
+
+  const moveWeek = useCallback((offset: number) => {
+    setVisibleWeekStart((currentWeekStart) => {
+      const nextWeekStart = addDays(currentWeekStart, offset * 7);
+      setSelectedDateKey(getDateKey(nextWeekStart));
+      setVisibleMonth(
+        new Date(nextWeekStart.getFullYear(), nextWeekStart.getMonth(), 1)
+      );
+      return nextWeekStart;
+    });
+  }, []);
+
+  const openWeekMode = () => {
+    const selectedDate = getDateFromKey(selectedDateKey);
+    setVisibleWeekStart(getStartOfWeek(selectedDate));
+    setViewMode("week");
+  };
+
+  const selectCalendarDate = (dateKey: string) => {
+    const selectedDate = getDateFromKey(dateKey);
+    setSelectedDateKey(dateKey);
+    setVisibleWeekStart(getStartOfWeek(selectedDate));
+  };
+
+  const weekPanResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gestureState) => {
+          return (
+            Math.abs(gestureState.dx) > 28 &&
+            Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.35
+          );
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dx <= -54) {
+            moveWeek(1);
+          }
+
+          if (gestureState.dx >= 54) {
+            moveWeek(-1);
+          }
+        },
+      }),
+    [moveWeek]
+  );
 
   const toggleTaskStatus = async (task: Task) => {
     const nextStatus = task.status === "done" ? "todo" : "done";
@@ -149,11 +254,66 @@ export default function CalendarScreen() {
     }
   };
 
+  const renderTaskItem = (task: Task) => (
+    <TouchableOpacity
+      activeOpacity={0.82}
+      key={task.id}
+      onPress={() =>
+        router.push({
+          pathname: "/task-detail",
+          params: { id: task.id },
+        })
+      }
+      style={styles.taskItem}
+    >
+      <View
+        style={[
+          styles.priorityBar,
+          { backgroundColor: getPriorityColor(task.priority) },
+          task.status === "done" && styles.donePriorityBar,
+        ]}
+      />
+      <View style={styles.taskContent}>
+        <Text
+          numberOfLines={1}
+          style={[
+            styles.taskTitle,
+            task.status === "done" && styles.doneTaskTitle,
+          ]}
+        >
+          {task.title}
+        </Text>
+        <Text style={styles.taskMeta}>{formatDueDateForDisplay(task.dueDate)}</Text>
+        <Text numberOfLines={1} style={styles.taskMeta}>
+          제출: {task.submitType}
+        </Text>
+      </View>
+      <TouchableOpacity
+        onPress={(event) => {
+          event.stopPropagation();
+          toggleTaskStatus(task);
+        }}
+        style={[
+          styles.statusButton,
+          task.status === "done"
+            ? styles.doneStatusButton
+            : styles.todoStatusButton,
+        ]}
+      >
+        <Text
+          style={[
+            styles.statusText,
+            task.status === "done" ? styles.doneText : styles.todoText,
+          ]}
+        >
+          {task.status === "done" ? "완료" : "미완료"}
+        </Text>
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+
   const selectedDateLabel = selectedDateKey.replace(/-/g, ".");
-  const monthTaskCount = tasks.filter((task) => {
-    const dateKey = getDueDateKey(task.dueDate);
-    return dateKey?.startsWith(getMonthKey(visibleMonth));
-  }).length;
+  const todayKey = getDateKey(new Date());
 
   return (
     <View style={styles.container}>
@@ -171,158 +331,254 @@ export default function CalendarScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.monthHeader}>
-        <TouchableOpacity onPress={() => moveMonth(-1)} style={styles.monthButton}>
-          <Text style={styles.monthButtonText}>‹</Text>
+      <View style={styles.modeSwitch}>
+        <TouchableOpacity
+          onPress={() => setViewMode("month")}
+          style={[
+            styles.modeButton,
+            viewMode === "month" && styles.selectedModeButton,
+          ]}
+        >
+          <Text
+            style={[
+              styles.modeButtonText,
+              viewMode === "month" && styles.selectedModeButtonText,
+            ]}
+          >
+            월간
+          </Text>
         </TouchableOpacity>
-        <View style={styles.monthTitleGroup}>
-          <Text style={styles.monthTitle}>{getMonthTitle(visibleMonth)}</Text>
-          <Text style={styles.monthSubtitle}>이번 달 과제 {monthTaskCount}개</Text>
-        </View>
-        <TouchableOpacity onPress={() => moveMonth(1)} style={styles.monthButton}>
-          <Text style={styles.monthButtonText}>›</Text>
+        <TouchableOpacity
+          onPress={openWeekMode}
+          style={[
+            styles.modeButton,
+            viewMode === "week" && styles.selectedModeButton,
+          ]}
+        >
+          <Text
+            style={[
+              styles.modeButtonText,
+              viewMode === "week" && styles.selectedModeButtonText,
+            ]}
+          >
+            주간
+          </Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.calendarPanel}>
-        <View style={styles.weekRow}>
-          {weekDays.map((day) => (
-            <Text key={day} style={styles.weekDay}>
-              {day}
-            </Text>
-          ))}
-        </View>
+      {viewMode === "month" ? (
+        <>
+          <View style={styles.monthHeader}>
+            <TouchableOpacity
+              onPress={() => moveMonth(-1)}
+              style={styles.monthButton}
+            >
+              <Text style={styles.monthButtonText}>‹</Text>
+            </TouchableOpacity>
+            <View style={styles.monthTitleGroup}>
+              <Text style={styles.monthTitle}>{getMonthTitle(visibleMonth)}</Text>
+              <Text style={styles.monthSubtitle}>
+                이번 달 과제 {monthTaskCount}개
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => moveMonth(1)}
+              style={styles.monthButton}
+            >
+              <Text style={styles.monthButtonText}>›</Text>
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.dayGrid}>
-          {calendarDays.map((calendarDay) => {
-            const dayTasks = tasksByDate[calendarDay.key] || [];
-            const isSelected = calendarDay.key === selectedDateKey;
-            const isToday = calendarDay.key === getDateKey(new Date());
+          <View style={styles.calendarPanel}>
+            <View style={styles.weekRow}>
+              {weekDayLabels.map((day) => (
+                <Text key={day} style={styles.weekDay}>
+                  {day}
+                </Text>
+              ))}
+            </View>
 
-            return (
-              <TouchableOpacity
-                activeOpacity={0.76}
-                key={calendarDay.key}
-                onPress={() => setSelectedDateKey(calendarDay.key)}
-                style={[
-                  styles.dayCell,
-                  !calendarDay.isCurrentMonth && styles.outsideMonthDayCell,
-                ]}
-              >
-                <View
-                  style={[
-                    styles.dayInner,
-                    isSelected && styles.selectedDayInner,
-                  ]}
-                >
-                  <Text
+            <View style={styles.dayGrid}>
+              {calendarDays.map((calendarDay) => {
+                const dayTasks = tasksByDate[calendarDay.key] || [];
+                const isSelected = calendarDay.key === selectedDateKey;
+                const isToday = calendarDay.key === todayKey;
+
+                return (
+                  <TouchableOpacity
+                    activeOpacity={0.76}
+                    key={calendarDay.key}
+                    onPress={() => selectCalendarDate(calendarDay.key)}
                     style={[
-                      styles.dayText,
-                      !calendarDay.isCurrentMonth && styles.outsideMonthText,
-                      isSelected && styles.selectedDayText,
-                      isToday && !isSelected && styles.todayText,
+                      styles.dayCell,
+                      !calendarDay.isCurrentMonth && styles.outsideMonthDayCell,
                     ]}
                   >
-                    {calendarDay.date.getDate()}
-                  </Text>
-                </View>
-
-                <View style={styles.dotRow}>
-                  {dayTasks.slice(0, 3).map((task) => (
                     <View
-                      key={task.id}
                       style={[
-                        styles.taskDot,
-                        { backgroundColor: getPriorityColor(task.priority) },
-                        task.status === "done" && styles.doneDot,
+                        styles.dayInner,
+                        isSelected && styles.selectedDayInner,
                       ]}
-                    />
-                  ))}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </View>
+                    >
+                      <Text
+                        style={[
+                          styles.dayText,
+                          !calendarDay.isCurrentMonth && styles.outsideMonthText,
+                          isSelected && styles.selectedDayText,
+                          isToday && !isSelected && styles.todayText,
+                        ]}
+                      >
+                        {calendarDay.date.getDate()}
+                      </Text>
+                    </View>
 
-      <View style={styles.listHeader}>
-        <Text style={styles.listTitle}>{selectedDateLabel}</Text>
-        <Text style={styles.listCount}>{selectedTasks.length}개</Text>
-      </View>
+                    <View style={styles.dotRow}>
+                      {dayTasks.slice(0, 3).map((task) => (
+                        <View
+                          key={task.id}
+                          style={[
+                            styles.taskDot,
+                            { backgroundColor: getPriorityColor(task.priority) },
+                            task.status === "done" && styles.doneDot,
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
 
-      {isLoading ? (
-        <View style={styles.loadingBox}>
-          <ActivityIndicator color="#222222" />
-        </View>
-      ) : selectedTasks.length === 0 ? (
-        <View style={styles.emptyBox}>
-          <Text style={styles.emptyTitle}>이 날 마감인 과제가 없습니다</Text>
-          <Text style={styles.emptyText}>
-            다른 날짜를 선택하거나 새 공지 캡처를 등록해보세요.
-          </Text>
-        </View>
+          <View style={styles.listHeader}>
+            <Text style={styles.listTitle}>{selectedDateLabel}</Text>
+            <Text style={styles.listCount}>{selectedTasks.length}개</Text>
+          </View>
+
+          {isLoading ? (
+            <View style={styles.loadingBox}>
+              <ActivityIndicator color="#222222" />
+            </View>
+          ) : selectedTasks.length === 0 ? (
+            <View style={styles.emptyBox}>
+              <Text style={styles.emptyTitle}>이 날 마감인 과제가 없습니다</Text>
+              <Text style={styles.emptyText}>
+                다른 날짜를 선택하거나 새 공지 캡처를 등록해보세요.
+              </Text>
+            </View>
+          ) : (
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.taskList}>
+              {selectedTasks.map(renderTaskItem)}
+            </ScrollView>
+          )}
+        </>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} style={styles.taskList}>
-          {selectedTasks.map((task) => (
-            <TouchableOpacity
-              activeOpacity={0.82}
-              key={task.id}
-              onPress={() =>
-                router.push({
-                  pathname: "/task-detail",
-                  params: { id: task.id },
-                })
-              }
-              style={styles.taskItem}
-            >
-              <View
-                style={[
-                  styles.priorityBar,
-                  { backgroundColor: getPriorityColor(task.priority) },
-                  task.status === "done" && styles.donePriorityBar,
-                ]}
-              />
-              <View style={styles.taskContent}>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    styles.taskTitle,
-                    task.status === "done" && styles.doneTaskTitle,
-                  ]}
-                >
-                  {task.title}
-                </Text>
-                <Text style={styles.taskMeta}>
-                  {formatDueDateForDisplay(task.dueDate)}
-                </Text>
-                <Text numberOfLines={1} style={styles.taskMeta}>
-                  제출: {task.submitType}
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={(event) => {
-                  event.stopPropagation();
-                  toggleTaskStatus(task);
-                }}
-                style={[
-                  styles.statusButton,
-                  task.status === "done"
-                    ? styles.doneStatusButton
-                    : styles.todoStatusButton,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.statusText,
-                    task.status === "done" ? styles.doneText : styles.todoText,
-                  ]}
-                >
-                  {task.status === "done" ? "완료" : "미완료"}
-                </Text>
-              </TouchableOpacity>
+        <>
+          <View style={styles.weekHeader}>
+            <TouchableOpacity onPress={() => moveWeek(-1)} style={styles.monthButton}>
+              <Text style={styles.monthButtonText}>‹</Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
+            <View style={styles.monthTitleGroup}>
+              <Text style={styles.monthTitle}>{getWeekRangeTitle(visibleWeekStart)}</Text>
+              <Text style={styles.monthSubtitle}>이번 주 과제 {weekTaskCount}개</Text>
+            </View>
+            <TouchableOpacity onPress={() => moveWeek(1)} style={styles.monthButton}>
+              <Text style={styles.monthButtonText}>›</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.weekPanel} {...weekPanResponder.panHandlers}>
+            <View style={styles.weekSwipeHint}>
+              <Text style={styles.weekSwipeHintText}>좌우로 밀어 주 이동</Text>
+            </View>
+            <View style={styles.weekStrip}>
+              {weekDays.map((weekDay) => {
+                const dayTasks = tasksByDate[weekDay.key] || [];
+                const isSelected = weekDay.key === selectedDateKey;
+                const isToday = weekDay.key === todayKey;
+
+                return (
+                  <TouchableOpacity
+                    activeOpacity={0.78}
+                    key={weekDay.key}
+                    onPress={() => setSelectedDateKey(weekDay.key)}
+                    style={[
+                      styles.weekStripDay,
+                      isSelected && styles.selectedWeekStripDay,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.weekStripLabel,
+                        isSelected && styles.selectedWeekStripText,
+                      ]}
+                    >
+                      {weekDayLabels[weekDay.date.getDay()]}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.weekStripNumber,
+                        isSelected && styles.selectedWeekStripText,
+                        isToday && !isSelected && styles.todayText,
+                      ]}
+                    >
+                      {weekDay.date.getDate()}
+                    </Text>
+                    <View style={styles.weekDotRow}>
+                      {dayTasks.slice(0, 3).map((task) => (
+                        <View
+                          key={task.id}
+                          style={[
+                            styles.taskDot,
+                            { backgroundColor: getPriorityColor(task.priority) },
+                            task.status === "done" && styles.doneDot,
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          {isLoading ? (
+            <View style={styles.loadingBox}>
+              <ActivityIndicator color="#222222" />
+            </View>
+          ) : weekTaskCount === 0 ? (
+            <View style={[styles.emptyBox, styles.weekEmptyBox]}>
+              <Text style={styles.emptyTitle}>이번 주 마감 과제가 없습니다</Text>
+              <Text style={styles.emptyText}>
+                다음 주로 넘기거나 새 공지 캡처를 등록해보세요.
+              </Text>
+            </View>
+          ) : (
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.taskList}>
+              {weekDays.map((weekDay) => {
+                const dayTasks = [...(tasksByDate[weekDay.key] || [])].sort(
+                  (a, b) => a.dueDate.localeCompare(b.dueDate)
+                );
+
+                if (dayTasks.length === 0) {
+                  return null;
+                }
+
+                return (
+                  <View key={weekDay.key} style={styles.weekTaskSection}>
+                    <View style={styles.weekTaskSectionHeader}>
+                      <Text style={styles.weekTaskSectionTitle}>
+                        {getDateSectionTitle(weekDay.date)}
+                      </Text>
+                      <Text style={styles.listCount}>{dayTasks.length}개</Text>
+                    </View>
+                    {dayTasks.map(renderTaskItem)}
+                  </View>
+                );
+              })}
+            </ScrollView>
+          )}
+        </>
       )}
     </View>
   );
@@ -363,8 +619,38 @@ const styles = StyleSheet.create({
     fontSize: 28,
     color: "#FFFFFF",
   },
+  modeSwitch: {
+    marginTop: 24,
+    padding: 4,
+    flexDirection: "row",
+    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+  },
+  modeButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  selectedModeButton: {
+    backgroundColor: "#222222",
+  },
+  modeButtonText: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#666666",
+  },
+  selectedModeButtonText: {
+    color: "#FFFFFF",
+  },
   monthHeader: {
-    marginTop: 28,
+    marginTop: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  weekHeader: {
+    marginTop: 20,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -404,6 +690,22 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: "#E4E4E4",
+  },
+  weekPanel: {
+    marginTop: 18,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "#E4E4E4",
+  },
+  weekSwipeHint: {
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  weekSwipeHintText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#999999",
   },
   weekRow: {
     flexDirection: "row",
@@ -460,6 +762,42 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 3,
   },
+  weekStrip: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  weekStripDay: {
+    flex: 1,
+    minHeight: 78,
+    paddingVertical: 10,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+  },
+  selectedWeekStripDay: {
+    backgroundColor: "#222222",
+  },
+  weekStripLabel: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#777777",
+  },
+  weekStripNumber: {
+    marginTop: 5,
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#222222",
+  },
+  selectedWeekStripText: {
+    color: "#FFFFFF",
+  },
+  weekDotRow: {
+    position: "absolute",
+    bottom: 8,
+    flexDirection: "row",
+    gap: 3,
+  },
   taskDot: {
     width: 5,
     height: 5,
@@ -495,6 +833,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: "#E8E8E8",
   },
+  weekEmptyBox: {
+    marginTop: 18,
+  },
   emptyTitle: {
     fontSize: 16,
     fontWeight: "800",
@@ -507,7 +848,22 @@ const styles = StyleSheet.create({
     color: "#777777",
   },
   taskList: {
+    marginTop: 4,
     marginBottom: 12,
+  },
+  weekTaskSection: {
+    marginBottom: 16,
+  },
+  weekTaskSectionHeader: {
+    marginBottom: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  weekTaskSectionTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#222222",
   },
   taskItem: {
     minHeight: 76,
