@@ -1,3 +1,5 @@
+# 
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -16,6 +18,8 @@ eggs/
 .eggs/
 lib/
 lib64/
+!frontend/src/lib/
+!frontend/src/lib/firebase.ts
 parts/
 sdist/
 var/
@@ -216,3 +220,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+.DS_Store
+
+
+
+
+# Backend
+backend/serviceAccountKey.json
+backend/.env
+backend/.venv/
+backend/venv/
+backend/__pycache__/

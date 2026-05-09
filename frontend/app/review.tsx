@@ -1,0 +1,303 @@
+import { createTask } from "@/src/api/taskApi";
+import {
+  AnalyzeTaskResult,
+  CreateTaskInput,
+  TaskPriority,
+} from "@/src/types/task";
+import { formatDueDateForDisplay } from "@/src/utils/date";
+import { router, useLocalSearchParams } from "expo-router";
+import { useMemo, useState } from "react";
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
+const defaultReviewValues: AnalyzeTaskResult = {
+  title: "운영체제 과제 1",
+  dueDate: "2026-05-10 23:59",
+  submitType: "LMS 제출",
+  keywords: ["필수 제출", "PDF", "지각 감점"],
+  summary: "운영체제 과제 1을 PDF 형식으로 LMS에 제출해야 합니다.",
+  priority: "high",
+};
+
+const parseAnalysisResult = (
+  rawResult: string | string[] | undefined
+): AnalyzeTaskResult | null => {
+  const value = Array.isArray(rawResult) ? rawResult[0] : rawResult;
+
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(value) as Partial<AnalyzeTaskResult>;
+
+    return {
+      title: parsed.title || defaultReviewValues.title,
+      dueDate: parsed.dueDate
+        ? formatDueDateForDisplay(parsed.dueDate)
+        : defaultReviewValues.dueDate,
+      submitType: parsed.submitType || defaultReviewValues.submitType,
+      keywords: Array.isArray(parsed.keywords)
+        ? parsed.keywords
+        : defaultReviewValues.keywords,
+      summary: parsed.summary || defaultReviewValues.summary,
+      priority:
+        parsed.priority === "high" ||
+        parsed.priority === "medium" ||
+        parsed.priority === "low"
+          ? parsed.priority
+          : defaultReviewValues.priority,
+    };
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
+export default function ReviewScreen() {
+  const { analysisResult } = useLocalSearchParams<{
+    analysisResult?: string;
+  }>();
+  const initialValues = useMemo(
+    () => parseAnalysisResult(analysisResult) || defaultReviewValues,
+    [analysisResult]
+  );
+
+  const [title, setTitle] = useState(initialValues.title);
+  const [dueDate, setDueDate] = useState(initialValues.dueDate);
+  const [submitType, setSubmitType] = useState(initialValues.submitType);
+  const [keywords, setKeywords] = useState(initialValues.keywords.join(", "));
+  const [summary, setSummary] = useState(initialValues.summary || "");
+  const [priority, setPriority] = useState<TaskPriority>(
+    initialValues.priority || "high"
+  );
+
+  const saveTask = async () => {
+    if (!title.trim()) {
+      Alert.alert("과제명을 입력해주세요.");
+      return;
+    }
+
+    const newTask: CreateTaskInput = {
+      title: title.trim(),
+      dueDate: dueDate.trim(),
+      submitType: submitType.trim(),
+      keywords: keywords
+        .split(",")
+        .map((keyword) => keyword.trim())
+        .filter((keyword) => keyword.length > 0),
+      summary: summary.trim(),
+      priority,
+      status: "todo",
+    };
+
+    try {
+      await createTask(newTask);
+
+      Alert.alert("저장 완료", "To-do에 과제가 추가되었습니다.", [
+        {
+          text: "확인",
+          onPress: () => router.replace("/"),
+        },
+      ]);
+    } catch (error) {
+      console.error(error);
+      Alert.alert("저장 실패", "과제를 저장하는 중 문제가 발생했습니다.");
+    }
+  };
+
+  return (
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <Text style={styles.title}>AI 분석 결과 확인</Text>
+      <Text style={styles.subtitle}>
+        AI가 추출한 내용을 확인하고, 틀린 부분이 있으면 직접 수정해주세요.
+      </Text>
+
+      <Text style={styles.label}>과제명</Text>
+      <TextInput
+        style={styles.input}
+        value={title}
+        onChangeText={setTitle}
+        placeholder="과제명을 입력하세요"
+      />
+
+      <Text style={styles.label}>마감일</Text>
+      <TextInput
+        style={styles.input}
+        value={dueDate}
+        onChangeText={setDueDate}
+        placeholder="예: 2026-05-10 23:59"
+      />
+
+      <Text style={styles.label}>제출 방식</Text>
+      <TextInput
+        style={styles.input}
+        value={submitType}
+        onChangeText={setSubmitType}
+        placeholder="예: LMS 제출"
+      />
+
+      <Text style={styles.label}>중요 키워드</Text>
+      <TextInput
+        style={styles.input}
+        value={keywords}
+        onChangeText={setKeywords}
+        placeholder="예: 필수 제출, PDF, 지각 감점"
+      />
+
+      <Text style={styles.label}>요약</Text>
+      <TextInput
+        style={[styles.input, styles.summaryInput]}
+        value={summary}
+        onChangeText={setSummary}
+        placeholder="공지 내용을 간단히 요약하세요"
+        multiline
+        textAlignVertical="top"
+      />
+
+      <Text style={styles.label}>우선순위</Text>
+      <View style={styles.priorityRow}>
+        <TouchableOpacity
+          style={[
+            styles.priorityButton,
+            priority === "high" && styles.selectedPriorityButton,
+          ]}
+          onPress={() => setPriority("high")}
+        >
+          <Text
+            style={[
+              styles.priorityButtonText,
+              priority === "high" && styles.selectedPriorityButtonText,
+            ]}
+          >
+            높음
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.priorityButton,
+            priority === "medium" && styles.selectedPriorityButton,
+          ]}
+          onPress={() => setPriority("medium")}
+        >
+          <Text
+            style={[
+              styles.priorityButtonText,
+              priority === "medium" && styles.selectedPriorityButtonText,
+            ]}
+          >
+            보통
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.priorityButton,
+            priority === "low" && styles.selectedPriorityButton,
+          ]}
+          onPress={() => setPriority("low")}
+        >
+          <Text
+            style={[
+              styles.priorityButtonText,
+              priority === "low" && styles.selectedPriorityButtonText,
+            ]}
+          >
+            낮음
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity style={styles.saveButton} onPress={saveTask}>
+        <Text style={styles.saveButtonText}>To-do로 저장하기</Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 24,
+    paddingTop: 72,
+    backgroundColor: "#F7F7F7",
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: "800",
+    color: "#222",
+  },
+  subtitle: {
+    marginTop: 8,
+    marginBottom: 16,
+    fontSize: 15,
+    lineHeight: 22,
+    color: "#666",
+  },
+  label: {
+    marginTop: 18,
+    marginBottom: 8,
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#444",
+  },
+  input: {
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
+    fontSize: 15,
+    color: "#222",
+  },
+  summaryInput: {
+    height: 110,
+    lineHeight: 21,
+  },
+  priorityRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 4,
+  },
+  priorityButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  selectedPriorityButton: {
+    backgroundColor: "#222",
+    borderColor: "#222",
+  },
+  priorityButtonText: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#555",
+  },
+  selectedPriorityButtonText: {
+    color: "#FFFFFF",
+  },
+  saveButton: {
+    marginTop: 24,
+    marginBottom: 40,
+    paddingVertical: 16,
+    borderRadius: 18,
+    backgroundColor: "#222",
+    alignItems: "center",
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+});
