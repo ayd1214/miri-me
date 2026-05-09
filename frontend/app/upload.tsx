@@ -30,7 +30,7 @@ export default function UploadScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      allowsEditing: true,
+      allowsEditing: false,
       quality: 1,
     });
 
@@ -161,8 +161,9 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 360,
     borderRadius: 18,
-    resizeMode: "cover",
+    resizeMode: "contain",
     marginBottom: 18,
+    backgroundColor: "#F1F1F1",
   },
   selectButton: {
     marginTop: 24,

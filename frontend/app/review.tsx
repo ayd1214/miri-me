@@ -4,6 +4,7 @@ import {
   CreateTaskInput,
   TaskPriority,
 } from "@/src/types/task";
+import { formatDueDateForDisplay } from "@/src/utils/date";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import {
@@ -39,7 +40,9 @@ const parseAnalysisResult = (
 
     return {
       title: parsed.title || defaultReviewValues.title,
-      dueDate: parsed.dueDate || defaultReviewValues.dueDate,
+      dueDate: parsed.dueDate
+        ? formatDueDateForDisplay(parsed.dueDate)
+        : defaultReviewValues.dueDate,
       submitType: parsed.submitType || defaultReviewValues.submitType,
       keywords: Array.isArray(parsed.keywords)
         ? parsed.keywords

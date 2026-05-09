@@ -1,6 +1,7 @@
 import { deleteTask as deleteTaskApi, getTasks, updateTaskStatus } from "@/src/api/taskApi";
 import { useAuth } from "@/src/context/AuthContext";
 import { Task } from "@/src/types/task";
+import { formatDueDateForDisplay } from "@/src/utils/date";
 
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
@@ -197,7 +198,9 @@ export default function HomeScreen() {
                 </View>
               </View>
 
-              <Text style={styles.taskInfo}>마감: {task.dueDate}</Text>
+              <Text style={styles.taskInfo}>
+                마감: {formatDueDateForDisplay(task.dueDate)}
+              </Text>
               <Text style={styles.taskInfo}>제출: {task.submitType}</Text>
 
               {task.priority && (
