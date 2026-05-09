@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from routers import tasks, analyze
+from routers import tasks, analyze, users
+from services.scheduler_service import start_scheduler
 
 app = FastAPI()
 
@@ -18,6 +19,11 @@ app.add_middleware(
 
 app.include_router(analyze.router)
 app.include_router(tasks.router)
+app.include_router(users.router)
+
+@app.on_event("startup")
+async def startup_event():
+    start_scheduler()
 
 @app.get("/")
 def root():
