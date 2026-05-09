@@ -1,4 +1,5 @@
 import { analyzeImage } from "@/src/api/taskApi";
+import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -46,10 +47,14 @@ export default function UploadScreen() {
 
     try {
       setIsAnalyzing(true);
+      const jpegImage = await manipulateAsync(selectedImage.uri, [], {
+        compress: 0.92,
+        format: SaveFormat.JPEG,
+      });
       const analysisResult = await analyzeImage({
-        uri: selectedImage.uri,
-        fileName: selectedImage.fileName,
-        mimeType: selectedImage.mimeType,
+        uri: jpegImage.uri,
+        fileName: "assignment.jpg",
+        mimeType: "image/jpeg",
       });
 
       router.push({
