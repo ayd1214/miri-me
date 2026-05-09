@@ -294,20 +294,13 @@ export default function CalendarScreen() {
           toggleTaskStatus(task);
         }}
         style={[
-          styles.statusButton,
-          task.status === "done"
-            ? styles.doneStatusButton
-            : styles.todoStatusButton,
+          styles.checkButton,
+          task.status === "done" && styles.checkedButton,
         ]}
       >
-        <Text
-          style={[
-            styles.statusText,
-            task.status === "done" ? styles.doneText : styles.todoText,
-          ]}
-        >
-          {task.status === "done" ? "완료" : "미완료"}
-        </Text>
+        {task.status === "done" && (
+          <Text style={styles.checkButtonText}>✓</Text>
+        )}
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -904,28 +897,25 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#777777",
   },
-  statusButton: {
-    minWidth: 62,
+  checkButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     marginLeft: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 999,
+    borderWidth: 2,
+    borderColor: "#D8D8D8",
     alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
   },
-  todoStatusButton: {
-    backgroundColor: "#FFF1F1",
+  checkedButton: {
+    borderColor: "#222222",
+    backgroundColor: "#222222",
   },
-  doneStatusButton: {
-    backgroundColor: "#F1F1F1",
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  todoText: {
-    color: "#D9534F",
-  },
-  doneText: {
-    color: "#888888",
+  checkButtonText: {
+    marginTop: -1,
+    fontSize: 17,
+    fontWeight: "900",
+    color: "#FFFFFF",
   },
 });
