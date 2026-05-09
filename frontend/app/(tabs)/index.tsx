@@ -164,33 +164,34 @@ export default function HomeScreen() {
                 >
                   {task.title}
                 </Text>
+              </View>
 
-                <View style={styles.actionRow}>
-                  <TouchableOpacity
-                    style={[
-                      styles.checkButton,
-                      task.status === "done" && styles.checkedButton,
-                    ]}
-                    onPress={(event) => {
-                      event.stopPropagation();
-                      toggleTaskStatus(task.id);
-                    }}
-                  >
-                    {task.status === "done" && (
-                      <Text style={styles.checkButtonText}>✓</Text>
-                    )}
-                  </TouchableOpacity>
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.checkButton,
+                    task.status === "done" && styles.checkedButton,
+                  ]}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    toggleTaskStatus(task.id);
+                  }}
+                >
+                  {task.status === "done" && (
+                    <Text style={styles.checkButtonText}>✓</Text>
+                  )}
+                </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={(event) => {
-                      event.stopPropagation();
-                      deleteTask(task.id);
-                    }}
-                  >
-                    <Text style={styles.deleteButtonText}>삭제</Text>
-                  </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                  accessibilityLabel={`${task.title} 삭제`}
+                  style={styles.deleteButton}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    deleteTask(task.id);
+                  }}
+                >
+                  <Text style={styles.deleteButtonText}>×</Text>
+                </TouchableOpacity>
               </View>
 
               <Text style={styles.taskInfo}>
@@ -349,14 +350,15 @@ const styles = StyleSheet.create({
   },
 
   taskCard: {
+    position: "relative",
     marginBottom: 14,
     padding: 18,
+    paddingRight: 92,
     borderRadius: 20,
     backgroundColor: "#FFFFFF",
   },
   taskTopRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "flex-start",
     gap: 12,
   },
@@ -377,20 +379,26 @@ const styles = StyleSheet.create({
   },
 
   actionRow: {
+    position: "absolute",
+    top: 14,
+    right: 14,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   deleteButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: "#F2F2F2",
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F4F4F4",
   },
   deleteButtonText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#777",
+    marginTop: -2,
+    fontSize: 22,
+    fontWeight: "500",
+    color: "#777777",
   },
   checkButton: {
     width: 30,
