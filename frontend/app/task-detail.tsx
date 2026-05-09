@@ -1,5 +1,6 @@
 import { getTask } from "@/src/api/taskApi";
 import { Task } from "@/src/types/task";
+import { formatDueDateForDisplay } from "@/src/utils/date";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -64,7 +65,9 @@ export default function TaskDetailScreen() {
 
       <View style={styles.card}>
         <Text style={styles.sectionLabel}>마감일</Text>
-        <Text style={styles.mainInfo}>{task.dueDate}</Text>
+        <Text style={styles.mainInfo}>
+          {formatDueDateForDisplay(task.dueDate)}
+        </Text>
 
         <Text style={styles.sectionLabel}>제출 방식</Text>
         <Text style={styles.infoText}>{task.submitType}</Text>
