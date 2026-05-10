@@ -1,10 +1,16 @@
-import { deleteTask as deleteTaskApi, getTasks, updateTaskStatus } from "@/src/api/taskApi";
+import {
+  deleteTask as deleteTaskApi,
+  getTasks,
+  registerPushToken,
+  updateTaskStatus,
+} from "@/src/api/taskApi";
 import { useAuth } from "@/src/context/AuthContext";
+import { getExpoPushToken } from "@/src/lib/notifications";
 import { Task } from "@/src/types/task";
 import { formatDueDateForDisplay } from "@/src/utils/date";
 
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   ScrollView,
@@ -17,11 +23,17 @@ import {
 export default function HomeScreen() {
   const { logout, user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoadingTasks, setIsLoadingTasks] = useState(true);
+  const registeredPushTokenForUser = useRef<string | null>(null);
 
   const loadTasks = useCallback(async () => {
     if (!user) {
+      setTasks([]);
+      setIsLoadingTasks(false);
       return;
     }
+
+    setIsLoadingTasks(true);
 
     try {
       const backendTasks = await getTasks();
@@ -30,6 +42,8 @@ export default function HomeScreen() {
       console.error(error);
       Alert.alert("불러오기 실패", "과제 목록을 불러오는 중 문제가 발생했습니다.");
       setTasks([]);
+    } finally {
+      setIsLoadingTasks(false);
     }
   }, [user]);
 
@@ -38,6 +52,35 @@ export default function HomeScreen() {
       loadTasks();
     }, [loadTasks])
   );
+
+  useEffect(() => {
+    if (!user || registeredPushTokenForUser.current === user.uid) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const registerCurrentDevice = async () => {
+      try {
+        const pushToken = await getExpoPushToken();
+
+        if (!pushToken || !isMounted) {
+          return;
+        }
+
+        await registerPushToken(pushToken);
+        registeredPushTokenForUser.current = user.uid;
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    registerCurrentDevice();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   const toggleTaskStatus = async (taskId: string) => {
     const targetTask = tasks.find((task) => task.id === taskId);
@@ -118,7 +161,9 @@ export default function HomeScreen() {
 
       <View style={styles.summaryCard}>
         <Text style={styles.summaryTitle}>오늘 확인할 일</Text>
-        <Text style={styles.summaryNumber}>{todoCount}개</Text>
+        <Text style={styles.summaryNumber}>
+          {isLoadingTasks ? "..." : `${todoCount}개`}
+        </Text>
         <Text style={styles.summaryText}>
           마감이 가까운 과제를 먼저 확인해보세요.
         </Text>
@@ -126,7 +171,12 @@ export default function HomeScreen() {
 
       <Text style={styles.sectionTitle}>다가오는 과제</Text>
 
-      {tasks.length === 0 ? (
+      {isLoadingTasks ? (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyTitle}>과제를 불러오는 중입니다</Text>
+          <Text style={styles.emptyText}>잠시만 기다려주세요.</Text>
+        </View>
+      ) : tasks.length === 0 ? (
         <View style={styles.emptyCard}>
           <Text style={styles.emptyIcon}>📌</Text>
           <Text style={styles.emptyTitle}>아직 등록된 과제가 없습니다</Text>

@@ -102,3 +102,10 @@ export const deleteTask = async (taskId: string): Promise<void> => {
     method: "DELETE",
   });
 };
+
+export const registerPushToken = async (token: string): Promise<void> => {
+  await request<void>("/push-token", {
+    method: "POST",
+    body: JSON.stringify({ pushToken: token }),
+  });
+};
