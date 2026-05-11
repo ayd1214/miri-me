@@ -117,6 +117,18 @@ export default function UploadScreen() {
           <Text style={styles.analyzeButtonText}>AI로 분석하기</Text>
         )}
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.manualButton}
+        onPress={() =>
+          router.push({
+            pathname: "/review",
+            params: { mode: "manual" },
+          })
+        }
+      >
+        <Text style={styles.manualButtonText}>직접 입력하기</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -198,5 +210,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "800",
     color: "#FFFFFF",
+  },
+  manualButton: {
+    marginTop: 12,
+    paddingVertical: 16,
+    borderRadius: 18,
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#DDDDDD",
+  },
+  manualButtonText: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#333333",
   },
 });
