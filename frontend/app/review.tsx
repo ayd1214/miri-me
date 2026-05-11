@@ -26,6 +26,15 @@ const defaultReviewValues: AnalyzeTaskResult = {
   priority: "high",
 };
 
+const emptyReviewValues: AnalyzeTaskResult = {
+  title: "",
+  dueDate: "",
+  submitType: "",
+  keywords: [],
+  summary: "",
+  priority: "medium",
+};
+
 const parseAnalysisResult = (
   rawResult: string | string[] | undefined
 ): AnalyzeTaskResult | null => {
@@ -62,12 +71,17 @@ const parseAnalysisResult = (
 };
 
 export default function ReviewScreen() {
-  const { analysisResult } = useLocalSearchParams<{
+  const { analysisResult, mode } = useLocalSearchParams<{
     analysisResult?: string;
+    mode?: string;
   }>();
+  const isManualMode = mode === "manual";
   const initialValues = useMemo(
-    () => parseAnalysisResult(analysisResult) || defaultReviewValues,
-    [analysisResult]
+    () =>
+      isManualMode
+        ? emptyReviewValues
+        : parseAnalysisResult(analysisResult) || defaultReviewValues,
+    [analysisResult, isManualMode]
   );
 
   const [title, setTitle] = useState(initialValues.title);
@@ -115,9 +129,13 @@ export default function ReviewScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <Text style={styles.title}>AI 분석 결과 확인</Text>
+      <Text style={styles.title}>
+        {isManualMode ? "과제 직접 등록" : "AI 분석 결과 확인"}
+      </Text>
       <Text style={styles.subtitle}>
-        AI가 추출한 내용을 확인하고, 틀린 부분이 있으면 직접 수정해주세요.
+        {isManualMode
+          ? "과제 정보를 직접 입력해서 To-do에 추가하세요."
+          : "AI가 추출한 내용을 확인하고, 틀린 부분이 있으면 직접 수정해주세요."}
       </Text>
 
       <Text style={styles.label}>과제명</Text>
