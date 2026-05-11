@@ -35,8 +35,8 @@ async def get_task(task_id: str, user_id: str = Depends(get_current_user)):
     task_data["id"] = doc.id
     return task_data
 
-@router.patch("/tasks/{task_id}")
-async def update_task(task_id: str, task_update: TaskStatusUpdate, user_id: str = Depends(get_current_user)):
+@router.patch("/tasks/{task_id}/status")
+async def update_task_status(task_id: str, task_update: TaskStatusUpdate, user_id: str = Depends(get_current_user)):
     doc_ref = db.collection("users").document(user_id).collection("tasks").document(task_id)
     doc = doc_ref.get()
     if not doc.exists:
