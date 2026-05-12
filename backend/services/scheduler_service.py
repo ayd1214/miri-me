@@ -1,5 +1,6 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from datetime import datetime, timedelta
+from datetime import datetime
+import pytz
 import asyncio
 from core.database import db
 from services.notification_service import send_push_notification
@@ -12,7 +13,9 @@ async def check_due_tasks():
     """
     print(f"[{datetime.now()}] Checking deadlines for all users...")
     
-    now = datetime.now()
+    # 한국 시간(KST)으로 현재 시간 설정
+    kst = pytz.timezone('Asia/Seoul')
+    now = datetime.now(kst)
     
     # 1. 모든 유저의 'todo' 상태 과제를 한 번의 쿼리로 가져옵니다.
     # (주의: Firestore 콘솔에서 collectionGroup 'tasks'에 대한 인덱스 생성이 필요할 수 있습니다.)
@@ -37,7 +40,8 @@ async def check_due_tasks():
             
         try:
             # 시간 차이 계산 (분 단위)
-            due_date = datetime.fromisoformat(due_date_str.replace('Z', ''))
+            due_date_naive = datetime.fromisoformat(due_date_str.replace('Z', ''))
+            due_date = kst.localize(due_date_naive)
             time_diff_min = int((due_date - now).total_seconds() / 60)
             
             # 유저가 설정한 알림 오프셋 (기본값: 1시간 전, 1일 전)
