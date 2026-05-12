@@ -1,7 +1,8 @@
-import { createTask } from "@/src/api/taskApi";
+import { createTask, updateTask } from "@/src/api/taskApi";
 import {
   AnalyzeTaskResult,
   CreateTaskInput,
+  Task,
   TaskPriority,
 } from "@/src/types/task";
 import { formatDueDateForDisplay } from "@/src/utils/date";
@@ -70,18 +71,49 @@ const parseAnalysisResult = (
   }
 };
 
+const parseTask = (rawTask: string | string[] | undefined): Task | null => {
+  const value = Array.isArray(rawTask) ? rawTask[0] : rawTask;
+
+  if (!value) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(value) as Task;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
 export default function ReviewScreen() {
-  const { analysisResult, mode } = useLocalSearchParams<{
+  const { analysisResult, mode, task, taskId } = useLocalSearchParams<{
     analysisResult?: string;
     mode?: string;
+    task?: string;
+    taskId?: string;
   }>();
   const isManualMode = mode === "manual";
+  const isEditMode = mode === "edit";
+  const editingTask = useMemo(() => parseTask(task), [task]);
   const initialValues = useMemo(
-    () =>
-      isManualMode
+    () => {
+      if (isEditMode && editingTask) {
+        return {
+          title: editingTask.title,
+          dueDate: formatDueDateForDisplay(editingTask.dueDate),
+          submitType: editingTask.submitType,
+          keywords: editingTask.keywords,
+          summary: editingTask.summary || "",
+          priority: editingTask.priority || "medium",
+        };
+      }
+
+      return isManualMode
         ? emptyReviewValues
-        : parseAnalysisResult(analysisResult) || defaultReviewValues,
-    [analysisResult, isManualMode]
+        : parseAnalysisResult(analysisResult) || defaultReviewValues;
+    },
+    [analysisResult, editingTask, isEditMode, isManualMode]
   );
 
   const [title, setTitle] = useState(initialValues.title);
@@ -113,6 +145,22 @@ export default function ReviewScreen() {
     };
 
     try {
+      if (isEditMode && taskId) {
+        await updateTask(taskId, newTask);
+
+        Alert.alert("수정 완료", "과제 정보가 수정되었습니다.", [
+          {
+            text: "확인",
+            onPress: () =>
+              router.replace({
+                pathname: "/task-detail",
+                params: { id: taskId },
+              }),
+          },
+        ]);
+        return;
+      }
+
       await createTask(newTask);
 
       Alert.alert("저장 완료", "To-do에 과제가 추가되었습니다.", [
@@ -130,10 +178,16 @@ export default function ReviewScreen() {
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <Text style={styles.title}>
-        {isManualMode ? "과제 직접 등록" : "AI 분석 결과 확인"}
+        {isEditMode
+          ? "과제 수정"
+          : isManualMode
+          ? "과제 직접 등록"
+          : "AI 분석 결과 확인"}
       </Text>
       <Text style={styles.subtitle}>
-        {isManualMode
+        {isEditMode
+          ? "변경할 내용을 수정한 뒤 저장하세요."
+          : isManualMode
           ? "과제 정보를 직접 입력해서 To-do에 추가하세요."
           : "AI가 추출한 내용을 확인하고, 틀린 부분이 있으면 직접 수정해주세요."}
       </Text>
@@ -235,7 +289,9 @@ export default function ReviewScreen() {
       </View>
 
       <TouchableOpacity style={styles.saveButton} onPress={saveTask}>
-        <Text style={styles.saveButtonText}>To-do로 저장하기</Text>
+        <Text style={styles.saveButtonText}>
+          {isEditMode ? "수정 저장하기" : "To-do로 저장하기"}
+        </Text>
       </TouchableOpacity>
     </ScrollView>
   );

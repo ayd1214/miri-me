@@ -24,6 +24,13 @@ export type CreateTaskInput = {
   status?: TaskStatus;
 };
 
+export type UpdateTaskInput = Partial<
+  Pick<
+    Task,
+    "title" | "dueDate" | "submitType" | "keywords" | "summary" | "priority" | "status"
+  >
+>;
+
 export type AnalyzeTaskResult = {
   title: string;
   dueDate: string;
