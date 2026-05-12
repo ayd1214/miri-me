@@ -5,6 +5,7 @@ import {
   CreateTaskInput,
   Task,
   TaskStatus,
+  UpdateTaskInput,
 } from "../types/task";
 
 const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
@@ -94,6 +95,16 @@ export const updateTaskStatus = async (
   return request<Task>(`/tasks/${taskId}/status`, {
     method: "PATCH",
     body: JSON.stringify({ status }),
+  });
+};
+
+export const updateTask = async (
+  taskId: string,
+  task: UpdateTaskInput
+): Promise<Task> => {
+  return request<Task>(`/tasks/${taskId}`, {
+    method: "PATCH",
+    body: JSON.stringify(task),
   });
 };
 

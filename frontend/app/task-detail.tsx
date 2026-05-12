@@ -99,6 +99,22 @@ export default function TaskDetailScreen() {
         </Text>
       </View>
 
+      <TouchableOpacity
+        style={styles.editButton}
+        onPress={() =>
+          router.push({
+            pathname: "/review",
+            params: {
+              mode: "edit",
+              taskId: task.id,
+              task: JSON.stringify(task),
+            },
+          })
+        }
+      >
+        <Text style={styles.editButtonText}>수정하기</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
         <Text style={styles.backButtonText}>홈으로 돌아가기</Text>
       </TouchableOpacity>
@@ -170,8 +186,22 @@ const styles = StyleSheet.create({
     lineHeight: 23,
     color: "#444",
   },
-  backButton: {
+  editButton: {
     marginTop: 8,
+    paddingVertical: 16,
+    borderRadius: 18,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#DDDDDD",
+  },
+  editButtonText: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#333333",
+  },
+  backButton: {
+    marginTop: 12,
     marginBottom: 40,
     paddingVertical: 16,
     borderRadius: 18,
