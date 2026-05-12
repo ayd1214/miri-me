@@ -36,7 +36,23 @@ async def get_task(task_id: str, user_id: str = Depends(get_current_user)):
     return task_data
 
 @router.patch("/tasks/{task_id}/status")
-async def update_task_status(task_id: str, task_update: TaskStatusUpdate, user_id: str = Depends(get_current_user)):
+async def update_task_status(task_id: str, status_update: TaskStatusUpdate, user_id: str = Depends(get_current_user)):
+    doc_ref = db.collection("users").document(user_id).collection("tasks").document(task_id)
+    doc = doc_ref.get()
+    if not doc.exists:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    update_data = {k: v for k, v in status_update.dict(exclude_unset=True).items() if v is not None}
+    
+    # 마감일이 수정되면 알림 기록 초기화
+    if "dueDate" in update_data:
+        update_data["notifiedOffsets"] = []
+        
+    doc_ref.update(update_data)
+    return {"id": task_id, **update_data}
+
+@router.patch("/tasks/{task_id}")
+async def update_full_task(task_id: str, task_update: TaskUpdate, user_id: str = Depends(get_current_user)):
     doc_ref = db.collection("users").document(user_id).collection("tasks").document(task_id)
     doc = doc_ref.get()
     if not doc.exists:
@@ -44,7 +60,7 @@ async def update_task_status(task_id: str, task_update: TaskStatusUpdate, user_i
     
     update_data = {k: v for k, v in task_update.dict(exclude_unset=True).items() if v is not None}
     
-    # 만약 마감일(dueDate)이 수정되었다면, 알림 기록을 초기화하여 다시 알림이 갈 수 있게 합니다.
+    # 마감일이 수정되면 알림 기록 초기화
     if "dueDate" in update_data:
         update_data["notifiedOffsets"] = []
     
