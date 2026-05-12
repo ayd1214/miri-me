@@ -8,6 +8,37 @@ import {
   UpdateTaskInput,
 } from "../types/task";
 
+export class ApiError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    Object.setPrototypeOf(this, ApiError.prototype);
+  }
+}
+
+const getErrorMessage = async (response: Response) => {
+  const errorText = await response.text();
+
+  if (!errorText) {
+    return `Request failed: ${response.status}`;
+  }
+
+  try {
+    const parsed = JSON.parse(errorText) as { detail?: unknown };
+
+    if (typeof parsed.detail === "string") {
+      return parsed.detail;
+    }
+  } catch {
+    // Fall back to the raw response text.
+  }
+
+  return errorText;
+};
+
 const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
   const token = await getCurrentUserIdToken();
 
@@ -21,8 +52,7 @@ const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `Request failed: ${response.status}`);
+    throw new ApiError(response.status, await getErrorMessage(response));
   }
 
   if (response.status === 204) {
@@ -81,8 +111,7 @@ export const analyzeImage = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `Request failed: ${response.status}`);
+    throw new ApiError(response.status, await getErrorMessage(response));
   }
 
   return response.json() as Promise<AnalyzeTaskResult>;
