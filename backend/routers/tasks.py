@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from core.auth import get_current_user
 from core.database import db
-from schemas.task import TaskCreate, TaskStatusUpdate
+from schemas.task import TaskCreate, TaskStatusUpdate, TaskUpdate
 from datetime import datetime
 
 router = APIRouter()
