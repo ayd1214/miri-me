@@ -25,10 +25,10 @@ async def analyze(image: UploadFile = File(...), user_id: str = Depends(get_curr
             ai_count = 0
             last_date = today_str
             
-        if ai_count >= 50:
+        if ai_count >= 1:
             raise HTTPException(
                 status_code=429, 
-                detail="오늘 사용 가능한 AI 분석 횟수(50회)를 초과했습니다. 내일 다시 시도해주세요."
+                detail="오늘 사용 가능한 AI 분석 횟수(1회)를 초과했습니다. 테스트 중입니다."
             )
             
         # 2. AI 분석 실행
