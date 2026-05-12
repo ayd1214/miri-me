@@ -58,14 +58,20 @@ async def check_due_tasks():
                     
                     push_token = user_tokens[user_id]
                     if push_token:
-                        # 사람이 읽기 쉬운 시간 표현으로 변환
-                        time_str = f"{offset//1440}일 전" if offset >= 1440 else f"{offset//60}시간 전"
-                        if offset < 60: time_str = f"{offset}분 전"
+                        # 사람이 읽기 쉬운 시간 표현으로 변환 (1주일, 1일, 1시간 등)
+                        if offset >= 10080 and offset % 10080 == 0:
+                            time_str = f"{offset//10080}주일 전"
+                        elif offset >= 1440 and offset % 1440 == 0:
+                            time_str = f"{offset//1440}일 전"
+                        elif offset >= 60 and offset % 60 == 0:
+                            time_str = f"{offset//60}시간 전"
+                        else:
+                            time_str = f"{offset}분 전"
                         
                         await send_push_notification(
                             push_token,
-                            f"마감 임박 알림 ({time_str})",
-                            f"'{task['title']}' 마감이 얼마 남지 않았습니다!",
+                            f"⏰ {time_str} 마감 임박!",
+                            f"'{task['title']}' 마감이 {time_str} 남았습니다. 잊지 말고 준비하세요!",
                             {"taskId": task_id, "offset": offset}
                         )
                         
