@@ -45,7 +45,7 @@ async def check_due_tasks():
             time_diff_min = int((due_date - now).total_seconds() / 60)
             
             # 유저가 설정한 알림 오프셋 (기본값: 1시간 전, 1일 전)
-            settings = task.get("notificationSettings", [60, 1440])
+            settings = task.get("notificationSettings", [60, 1440, 10080])
             notified = task.get("notifiedOffsets", [])
             
             for offset in settings:
