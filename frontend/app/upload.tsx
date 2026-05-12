@@ -1,4 +1,4 @@
-import { analyzeImage } from "@/src/api/taskApi";
+import { ApiError, analyzeImage } from "@/src/api/taskApi";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
@@ -65,9 +65,18 @@ export default function UploadScreen() {
       });
     } catch (error) {
       console.error(error);
+
+      if (error instanceof ApiError && error.status === 429) {
+        Alert.alert("사용 횟수 초과", error.message, [{ text: "확인" }]);
+        return;
+      }
+
       Alert.alert(
         "분석 실패",
-        "이미지를 분석하는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요."
+        error instanceof ApiError
+          ? error.message
+          : "이미지를 분석하는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.",
+        [{ text: "확인" }]
       );
     } finally {
       setIsAnalyzing(false);
