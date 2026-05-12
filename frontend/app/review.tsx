@@ -198,6 +198,7 @@ export default function ReviewScreen() {
         value={title}
         onChangeText={setTitle}
         placeholder="과제명을 입력하세요"
+        placeholderTextColor="#8A8A8A"
       />
 
       <Text style={styles.label}>마감일</Text>
@@ -206,6 +207,7 @@ export default function ReviewScreen() {
         value={dueDate}
         onChangeText={setDueDate}
         placeholder="예: 2026-05-10 23:59"
+        placeholderTextColor="#8A8A8A"
       />
 
       <Text style={styles.label}>제출 방식</Text>
@@ -214,6 +216,7 @@ export default function ReviewScreen() {
         value={submitType}
         onChangeText={setSubmitType}
         placeholder="예: LMS 제출"
+        placeholderTextColor="#8A8A8A"
       />
 
       <Text style={styles.label}>중요 키워드</Text>
@@ -222,6 +225,7 @@ export default function ReviewScreen() {
         value={keywords}
         onChangeText={setKeywords}
         placeholder="예: 필수 제출, PDF, 지각 감점"
+        placeholderTextColor="#8A8A8A"
       />
 
       <Text style={styles.label}>요약</Text>
@@ -230,6 +234,7 @@ export default function ReviewScreen() {
         value={summary}
         onChangeText={setSummary}
         placeholder="공지 내용을 간단히 요약하세요"
+        placeholderTextColor="#8A8A8A"
         multiline
         textAlignVertical="top"
       />
