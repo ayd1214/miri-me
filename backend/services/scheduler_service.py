@@ -26,7 +26,10 @@ async def check_due_tasks():
         task_id = task_doc.id
         
         # 부모 문서 경로에서 user_id 추출 (users/{user_id}/tasks/{task_id})
-        user_id = task_doc.reference.parent.parent.id
+        path_segments = task_doc.reference.path.split('/')
+        if len(path_segments) < 2:
+            continue
+        user_id = path_segments[1]
         
         due_date_str = task.get('dueDate')
         if not due_date_str:
