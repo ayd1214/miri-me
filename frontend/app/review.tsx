@@ -199,6 +199,8 @@ export default function ReviewScreen() {
         onChangeText={setTitle}
         placeholder="과제명을 입력하세요"
         placeholderTextColor="#8A8A8A"
+        multiline
+        textAlignVertical="top"
       />
 
       <Text style={styles.label}>마감일</Text>
@@ -208,6 +210,8 @@ export default function ReviewScreen() {
         onChangeText={setDueDate}
         placeholder="예: 2026-05-10 23:59"
         placeholderTextColor="#8A8A8A"
+        multiline
+        textAlignVertical="top"
       />
 
       <Text style={styles.label}>제출 방식</Text>
@@ -217,6 +221,8 @@ export default function ReviewScreen() {
         onChangeText={setSubmitType}
         placeholder="예: LMS 제출"
         placeholderTextColor="#8A8A8A"
+        multiline
+        textAlignVertical="top"
       />
 
       <Text style={styles.label}>중요 키워드</Text>
@@ -226,6 +232,8 @@ export default function ReviewScreen() {
         onChangeText={setKeywords}
         placeholder="예: 필수 제출, PDF, 지각 감점"
         placeholderTextColor="#8A8A8A"
+        multiline
+        textAlignVertical="top"
       />
 
       <Text style={styles.label}>요약</Text>
@@ -329,16 +337,17 @@ const styles = StyleSheet.create({
     color: "#444",
   },
   input: {
+    minHeight: 50,
     paddingHorizontal: 14,
     paddingVertical: 13,
     borderRadius: 14,
     backgroundColor: "#FFFFFF",
     fontSize: 15,
+    lineHeight: 21,
     color: "#222",
   },
   summaryInput: {
     height: 110,
-    lineHeight: 21,
   },
   priorityRow: {
     flexDirection: "row",
