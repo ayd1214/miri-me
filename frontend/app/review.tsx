@@ -10,6 +10,8 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -34,6 +36,57 @@ const emptyReviewValues: AnalyzeTaskResult = {
   keywords: [],
   summary: "",
   priority: "medium",
+};
+
+const normalizeDueDateInput = (value: string): string | null => {
+  const trimmed = value.trim();
+  const match = trimmed.match(
+    /^(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const [, datePart, hourText, minuteText, secondText = "00"] = match;
+  const [year, month, day] = datePart.split("-").map(Number);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText);
+  const date = new Date(year, month - 1, day, hour, minute, second);
+
+  const isValidDate =
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day &&
+    date.getHours() === hour &&
+    date.getMinutes() === minute &&
+    date.getSeconds() === second;
+
+  if (!isValidDate) {
+    return null;
+  }
+
+  return `${datePart}T${hourText}:${minuteText}:${secondText}`;
+};
+
+const showAlert = (
+  title: string,
+  message?: string,
+  onConfirm?: () => void
+) => {
+  if (Platform.OS === "web") {
+    window.alert(message ? `${title}\n\n${message}` : title);
+    onConfirm?.();
+    return;
+  }
+
+  Alert.alert(title, message, [
+    {
+      text: "확인",
+      onPress: onConfirm,
+    },
+  ]);
 };
 
 const parseAnalysisResult = (
@@ -127,13 +180,23 @@ export default function ReviewScreen() {
 
   const saveTask = async () => {
     if (!title.trim()) {
-      Alert.alert("과제명을 입력해주세요.");
+      showAlert("과제명을 입력해주세요.");
+      return;
+    }
+
+    const normalizedDueDate = normalizeDueDateInput(dueDate);
+
+    if (!normalizedDueDate) {
+      showAlert(
+        "마감일을 확인해주세요.",
+        "마감일은 2026-05-10 23:59 형식으로 입력해주세요."
+      );
       return;
     }
 
     const newTask: CreateTaskInput = {
       title: title.trim(),
-      dueDate: dueDate.trim(),
+      dueDate: normalizedDueDate,
       submitType: submitType.trim(),
       keywords: keywords
         .split(",")
@@ -148,35 +211,37 @@ export default function ReviewScreen() {
       if (isEditMode && taskId) {
         await updateTask(taskId, newTask);
 
-        Alert.alert("수정 완료", "과제 정보가 수정되었습니다.", [
-          {
-            text: "확인",
-            onPress: () =>
-              router.replace({
-                pathname: "/task-detail",
-                params: { id: taskId },
-              }),
-          },
-        ]);
+        showAlert("수정 완료", "과제 정보가 수정되었습니다.", () =>
+          router.replace({
+            pathname: "/task-detail",
+            params: { id: taskId },
+          })
+        );
         return;
       }
 
       await createTask(newTask);
 
-      Alert.alert("저장 완료", "To-do에 과제가 추가되었습니다.", [
-        {
-          text: "확인",
-          onPress: () => router.replace("/"),
-        },
-      ]);
+      showAlert("저장 완료", "To-do에 과제가 추가되었습니다.", () =>
+        router.replace("/")
+      );
     } catch (error) {
       console.error(error);
-      Alert.alert("저장 실패", "과제를 저장하는 중 문제가 발생했습니다.");
+      showAlert("저장 실패", "과제를 저장하는 중 문제가 발생했습니다.");
     }
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <KeyboardAvoidingView
+      style={styles.keyboardAvoidingView}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
       <Text style={styles.title}>
         {isEditMode
           ? "과제 수정"
@@ -306,16 +371,24 @@ export default function ReviewScreen() {
           {isEditMode ? "수정 저장하기" : "To-do로 저장하기"}
         </Text>
       </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoidingView: {
+    flex: 1,
+    backgroundColor: "#F7F7F7",
+  },
   container: {
     flex: 1,
+    backgroundColor: "#F7F7F7",
+  },
+  contentContainer: {
     padding: 24,
     paddingTop: 72,
-    backgroundColor: "#F7F7F7",
+    paddingBottom: 140,
   },
   title: {
     fontSize: 30,

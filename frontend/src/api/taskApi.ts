@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "../constants/api";
 import { getCurrentUserIdToken } from "../lib/firebase";
+import { Platform } from "react-native";
 import {
   AnalyzeTaskResult,
   CreateTaskInput,
@@ -96,11 +97,21 @@ export const analyzeImage = async (
   const formData = new FormData();
   const fallbackName = image.uri.split("/").pop() || "assignment.jpg";
 
-  formData.append("image", {
-    uri: image.uri,
-    name: image.fileName || fallbackName,
-    type: image.mimeType || "image/jpeg",
-  } as unknown as Blob);
+  if (Platform.OS === "web") {
+    const response = await fetch(image.uri);
+    const blob = await response.blob();
+    const fileType = image.mimeType || blob.type || "image/jpeg";
+    const file =
+      blob.type === fileType ? blob : new Blob([blob], { type: fileType });
+
+    formData.append("image", file, image.fileName || fallbackName);
+  } else {
+    formData.append("image", {
+      uri: image.uri,
+      name: image.fileName || fallbackName,
+      type: image.mimeType || "image/jpeg",
+    } as unknown as Blob);
+  }
 
   const response = await fetch(`${API_BASE_URL}/analyze`, {
     method: "POST",

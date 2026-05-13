@@ -491,45 +491,46 @@ export default function CalendarScreen() {
                 const isToday = weekDay.key === todayKey;
 
                 return (
-                  <TouchableOpacity
-                    activeOpacity={0.78}
-                    key={weekDay.key}
-                    onPress={() => setSelectedDateKey(weekDay.key)}
-                    style={[
-                      styles.weekStripDay,
-                      isSelected && styles.selectedWeekStripDay,
-                    ]}
-                  >
-                    <Text
+                  <View key={weekDay.key} style={styles.weekStripDaySlot}>
+                    <TouchableOpacity
+                      activeOpacity={0.78}
+                      onPress={() => setSelectedDateKey(weekDay.key)}
                       style={[
-                        styles.weekStripLabel,
-                        isSelected && styles.selectedWeekStripText,
+                        styles.weekStripDay,
+                        isSelected && styles.selectedWeekStripDay,
                       ]}
                     >
-                      {weekDayLabels[weekDay.date.getDay()]}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.weekStripNumber,
-                        isSelected && styles.selectedWeekStripText,
-                        isToday && !isSelected && styles.todayText,
-                      ]}
-                    >
-                      {weekDay.date.getDate()}
-                    </Text>
-                    <View style={styles.weekDotRow}>
-                      {dayTasks.slice(0, 3).map((task) => (
-                        <View
-                          key={task.id}
-                          style={[
-                            styles.taskDot,
-                            { backgroundColor: getPriorityColor(task.priority) },
-                            task.status === "done" && styles.doneDot,
-                          ]}
-                        />
-                      ))}
-                    </View>
-                  </TouchableOpacity>
+                      <Text
+                        style={[
+                          styles.weekStripLabel,
+                          isSelected && styles.selectedWeekStripText,
+                        ]}
+                      >
+                        {weekDayLabels[weekDay.date.getDay()]}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.weekStripNumber,
+                          isSelected && styles.selectedWeekStripText,
+                          isToday && !isSelected && styles.todayText,
+                        ]}
+                      >
+                        {weekDay.date.getDate()}
+                      </Text>
+                      <View style={styles.weekDotRow}>
+                        {dayTasks.slice(0, 3).map((task) => (
+                          <View
+                            key={task.id}
+                            style={[
+                              styles.taskDot,
+                              { backgroundColor: getPriorityColor(task.priority) },
+                              task.status === "done" && styles.doneDot,
+                            ]}
+                          />
+                        ))}
+                      </View>
+                    </TouchableOpacity>
+                  </View>
                 );
               })}
             </View>
@@ -757,10 +758,13 @@ const styles = StyleSheet.create({
   },
   weekStrip: {
     flexDirection: "row",
-    gap: 6,
+    marginHorizontal: -3,
+  },
+  weekStripDaySlot: {
+    flex: 1,
+    paddingHorizontal: 3,
   },
   weekStripDay: {
-    flex: 1,
     minHeight: 78,
     paddingVertical: 10,
     borderRadius: 18,

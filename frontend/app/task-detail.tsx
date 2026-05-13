@@ -115,7 +115,10 @@ export default function TaskDetailScreen() {
         <Text style={styles.editButtonText}>수정하기</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => router.replace("/")}
+      >
         <Text style={styles.backButtonText}>홈으로 돌아가기</Text>
       </TouchableOpacity>
     </ScrollView>

@@ -7,6 +7,20 @@ import pytz
 
 router = APIRouter()
 
+def parse_due_date(due_date_str: str, kst):
+    try:
+        due_date_naive = datetime.fromisoformat(due_date_str.replace("Z", ""))
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="dueDate must be in YYYY-MM-DDTHH:MM:SS format",
+        )
+
+    if due_date_naive.tzinfo is not None:
+        return due_date_naive.astimezone(kst)
+
+    return kst.localize(due_date_naive)
+
 @router.get("/tasks")
 async def get_tasks(user_id: str = Depends(get_current_user)):
     tasks_ref = db.collection("users").document(user_id).collection("tasks")
@@ -26,8 +40,7 @@ async def create_task(task: TaskCreate, user_id: str = Depends(get_current_user)
     notified_offsets = []
     
     # dueDate 파싱 및 KST 설정
-    due_date_naive = datetime.fromisoformat(task.dueDate.replace("Z", ""))
-    due_date = kst.localize(due_date_naive)
+    due_date = parse_due_date(task.dueDate, kst)
     
     if task.notificationSettings:
         for offset in task.notificationSettings:
@@ -71,8 +84,7 @@ async def update_task_status(task_id: str, status_update: TaskStatusUpdate, user
         current_settings = update_data.get("notificationSettings", doc.to_dict().get("notificationSettings", []))
         
         try:
-            current_due_date_naive = datetime.fromisoformat(current_due_date_str.replace("Z", ""))
-            current_due_date = kst.localize(current_due_date_naive)
+            current_due_date = parse_due_date(current_due_date_str, kst)
             for offset in current_settings:
                 target_time = current_due_date - timedelta(minutes=offset)
                 if now >= target_time:
@@ -103,8 +115,7 @@ async def update_full_task(task_id: str, task_update: TaskUpdate, user_id: str =
         current_settings = update_data.get("notificationSettings", doc.to_dict().get("notificationSettings", []))
         
         try:
-            current_due_date_naive = datetime.fromisoformat(current_due_date_str.replace("Z", ""))
-            current_due_date = kst.localize(current_due_date_naive)
+            current_due_date = parse_due_date(current_due_date_str, kst)
             for offset in current_settings:
                 target_time = current_due_date - timedelta(minutes=offset)
                 if now >= target_time:

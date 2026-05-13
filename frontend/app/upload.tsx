@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -20,13 +21,24 @@ export default function UploadScreen() {
 
   const imageUri = selectedImage?.uri ?? null;
 
-  const pickImage = async () => {
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permissionResult.granted) {
-      Alert.alert("권한 필요", "이미지를 선택하려면 사진 접근 권한이 필요합니다.");
+  const showAlert = (title: string, message?: string) => {
+    if (Platform.OS === "web") {
+      window.alert(message ? `${title}\n\n${message}` : title);
       return;
+    }
+
+    Alert.alert(title, message);
+  };
+
+  const pickImage = async () => {
+    if (Platform.OS !== "web") {
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permissionResult.granted) {
+        showAlert("권한 필요", "이미지를 선택하려면 사진 접근 권한이 필요합니다.");
+        return;
+      }
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -47,14 +59,17 @@ export default function UploadScreen() {
 
     try {
       setIsAnalyzing(true);
-      const jpegImage = await manipulateAsync(selectedImage.uri, [], {
-        compress: 0.92,
-        format: SaveFormat.JPEG,
-      });
+      const imageForAnalysis =
+        Platform.OS === "web"
+          ? selectedImage
+          : await manipulateAsync(selectedImage.uri, [], {
+              compress: 0.92,
+              format: SaveFormat.JPEG,
+            });
       const analysisResult = await analyzeImage({
-        uri: jpegImage.uri,
-        fileName: "assignment.jpg",
-        mimeType: "image/jpeg",
+        uri: imageForAnalysis.uri,
+        fileName: selectedImage.fileName || "assignment.jpg",
+        mimeType: selectedImage.mimeType || "image/jpeg",
       });
 
       router.push({
@@ -67,16 +82,15 @@ export default function UploadScreen() {
       console.error(error);
 
       if (error instanceof ApiError && error.status === 429) {
-        Alert.alert("사용 횟수 초과", error.message, [{ text: "확인" }]);
+        showAlert("사용 횟수 초과", error.message);
         return;
       }
 
-      Alert.alert(
+      showAlert(
         "분석 실패",
         error instanceof ApiError
           ? error.message
-          : "이미지를 분석하는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.",
-        [{ text: "확인" }]
+          : "이미지를 분석하는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요."
       );
     } finally {
       setIsAnalyzing(false);
