@@ -70,6 +70,25 @@ const normalizeDueDateInput = (value: string): string | null => {
   return `${datePart}T${hourText}:${minuteText}:${secondText}`;
 };
 
+const showAlert = (
+  title: string,
+  message?: string,
+  onConfirm?: () => void
+) => {
+  if (Platform.OS === "web") {
+    window.alert(message ? `${title}\n\n${message}` : title);
+    onConfirm?.();
+    return;
+  }
+
+  Alert.alert(title, message, [
+    {
+      text: "확인",
+      onPress: onConfirm,
+    },
+  ]);
+};
+
 const parseAnalysisResult = (
   rawResult: string | string[] | undefined
 ): AnalyzeTaskResult | null => {
@@ -161,14 +180,14 @@ export default function ReviewScreen() {
 
   const saveTask = async () => {
     if (!title.trim()) {
-      Alert.alert("과제명을 입력해주세요.");
+      showAlert("과제명을 입력해주세요.");
       return;
     }
 
     const normalizedDueDate = normalizeDueDateInput(dueDate);
 
     if (!normalizedDueDate) {
-      Alert.alert(
+      showAlert(
         "마감일을 확인해주세요.",
         "마감일은 2026-05-10 23:59 형식으로 입력해주세요."
       );
@@ -192,30 +211,23 @@ export default function ReviewScreen() {
       if (isEditMode && taskId) {
         await updateTask(taskId, newTask);
 
-        Alert.alert("수정 완료", "과제 정보가 수정되었습니다.", [
-          {
-            text: "확인",
-            onPress: () =>
-              router.replace({
-                pathname: "/task-detail",
-                params: { id: taskId },
-              }),
-          },
-        ]);
+        showAlert("수정 완료", "과제 정보가 수정되었습니다.", () =>
+          router.replace({
+            pathname: "/task-detail",
+            params: { id: taskId },
+          })
+        );
         return;
       }
 
       await createTask(newTask);
 
-      Alert.alert("저장 완료", "To-do에 과제가 추가되었습니다.", [
-        {
-          text: "확인",
-          onPress: () => router.replace("/"),
-        },
-      ]);
+      showAlert("저장 완료", "To-do에 과제가 추가되었습니다.", () =>
+        router.replace("/")
+      );
     } catch (error) {
       console.error(error);
-      Alert.alert("저장 실패", "과제를 저장하는 중 문제가 발생했습니다.");
+      showAlert("저장 실패", "과제를 저장하는 중 문제가 발생했습니다.");
     }
   };
 

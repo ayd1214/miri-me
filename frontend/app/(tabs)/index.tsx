@@ -13,6 +13,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -110,6 +111,29 @@ export default function HomeScreen() {
   };
 
   const deleteTask = (taskId: string) => {
+    const confirmDelete = async () => {
+      const updatedTasks = tasks.filter((task) => task.id !== taskId);
+      setTasks(updatedTasks);
+
+      try {
+        await deleteTaskApi(taskId);
+      } catch (error) {
+        console.error(error);
+        Alert.alert("삭제 실패", "과제를 삭제하는 중 문제가 발생했습니다.");
+        loadTasks();
+      }
+    };
+
+    if (Platform.OS === "web") {
+      const shouldDelete = window.confirm("과제 삭제\n\n이 과제를 삭제할까요?");
+
+      if (shouldDelete) {
+        confirmDelete();
+      }
+
+      return;
+    }
+
     Alert.alert("과제 삭제", "이 과제를 삭제할까요?", [
       {
         text: "취소",
@@ -118,18 +142,7 @@ export default function HomeScreen() {
       {
         text: "삭제",
         style: "destructive",
-        onPress: async () => {
-          const updatedTasks = tasks.filter((task) => task.id !== taskId);
-          setTasks(updatedTasks);
-
-          try {
-            await deleteTaskApi(taskId);
-          } catch (error) {
-            console.error(error);
-            Alert.alert("삭제 실패", "과제를 삭제하는 중 문제가 발생했습니다.");
-            loadTasks();
-          }
-        },
+        onPress: confirmDelete,
       },
     ]);
   };
