@@ -4,7 +4,7 @@
 
 ## Demo
 
-- Web Demo: https://miri-o2ak6eivc-ayd1214s-projects.vercel.app
+- Web Demo: https://miri-me.vercel.app/
 - Backend: https://miri-me-backend.onrender.com
 - 시연 영상: https://youtu.be/pw2aU0QRhnU
 
