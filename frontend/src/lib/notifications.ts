@@ -11,7 +11,7 @@ const getProjectId = () => {
 };
 
 export const getExpoPushToken = async (): Promise<string | null> => {
-  if (Constants.appOwnership === "expo") {
+  if (Constants.executionEnvironment === "storeClient") {
     console.warn("Remote push notifications require a development build.");
     return null;
   }
